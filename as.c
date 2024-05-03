@@ -5,7 +5,7 @@
 #include <unistd.h>
 
 #define MAGIC_NUMBER htobe64(0x4152434859302E30) // Check that // Checked
-#define HEADER_SIZE 48
+#define HEADER_SIZE 64
 
 FILE *file;
 size_t const MAX_SIZE = 1024 * 1024;
@@ -24,6 +24,8 @@ unsigned long long int address_data;
 unsigned long long int size_data;
 unsigned long long int address_code;
 unsigned long long int size_code;
+unsigned long long int address_parallel_on;
+unsigned long long int core_number;
 unsigned long long int size_total;
 
 typedef enum
@@ -416,6 +418,7 @@ void parse_data_section()
         // fprintf(file, "%s", string);
         fwrite(&END_CHAR, sizeof(char), 1, file);
         size_data += len + 1;
+        current_address += len + 1;
     }
     else
     {
@@ -530,21 +533,26 @@ void write_header()
 {
     fseek(file, 0, SEEK_SET);
     // address_data = HEADER_SIZE;
-    address_code = address_data + size_data;
-    size_code = 20;
+    // address_code = address_data + size_data;
     // unsigned long long int thread_number = 0;
-    size_total = address_code + size_code;
+
+    // size_total = address_code + size_code;
+    address_parallel_on = current_address;
+    core_number = 1;
+    size_total = current_address;
     printf("Adress Data: %llx\nSize Data: %llx\nAdress Code: %llx\nSize Code: %llx\nTotal size: %llx\n", address_data, size_data, address_code, size_code, size_total);
 
     unsigned long long int to_write[8] = {
-        MAGIC_NUMBER,          // ARCHY0.0
-        htobe64(address_data), // Data section address
-        htobe64(size_data),    // Data section size
-        htobe64(address_code), // Code section adress
-        htobe64(size_code),    // Code section size
-        htobe64(size_total)    // Size total
+        MAGIC_NUMBER,                 // ARCHY0.0
+        htobe64(address_data),        // Data section address
+        htobe64(size_data),           // Data section size
+        htobe64(address_code),        // Code section address
+        htobe64(size_code),           // Code section size
+        htobe64(address_parallel_on), // Parallel on section address
+        htobe64(core_number),
+        htobe64(size_total) // Size total
     };
-    fwrite(to_write, sizeof(unsigned long long int), 6, file); // With 8 sizeof i64 (8 bytes)
+    fwrite(to_write, sizeof(char), HEADER_SIZE, file); // With 8 sizeof i64 (8 bytes)
     return;
 }
 
