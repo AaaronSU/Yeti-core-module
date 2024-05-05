@@ -5,7 +5,7 @@ data:
 	
 code:	
 	movui u0, 0 	 # Array index
-	movui u1, 10000	 # Number of array elements boundary
+	movui u1, 10	 # Number of array elements boundary
 	movui u2, 8	 # sizeof(f64)
 	mulu  u1, u1, u2 # Array size in bytes (loop boundary)
 	movfi f0, 0.0	 # Accumulator

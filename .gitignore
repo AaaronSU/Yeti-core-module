@@ -53,6 +53,6 @@ dkms.conf
 
 .gitignore
 bin/
-big_small_endian.c
-header_reader.c
-itsok.c
+garbage/
+.vscode/
+output.archyb
