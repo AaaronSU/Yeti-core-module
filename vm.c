@@ -405,7 +405,7 @@ int main(int argc, char *argv[])
         return 1;
     }
     core_t *core = core_new(argv[1], 0);
-    instruction_set[22](core);
+    // instruction_set[22](core);
 
     set_up_instruction_set();
 
