@@ -1,15 +1,23 @@
-all: run
+all: run_par
 
+run_par: mkdir_bin
+	gcc vm.c -o bin/vm
+	./bin/vm script.conf
 
 run: mkdir_bin
-	gcc vm.c -o bin/vm
+	gcc vm.c -o bin/vm 
 	./bin/vm reference/hello_world.archyb
 	./bin/vm reference/fibonacci.archyb
+	./bin/vm reference/dotprod_u64.archyb
+
 
 vm_debug: mkdir_bin
 	gcc vm.c -o bin/vm -DDEBUG
-	./bin/vm reference/hello_world.archyb
-	./bin/vm reference/fibonacci.archyb
+	./bin/vm script.conf
+	# ./bin/vm reference/hello_world.archyb
+	# ./bin/vm reference/fibonacci.archyb
+	# ./bin/vm reference/dotprod_u64.archyb
+
 
 verify_as: mkdir_bin
 	gcc as.c -o bin/as -Werror -O3 -Wall -Wconversion -Wextra
@@ -17,7 +25,7 @@ verify_as: mkdir_bin
 	python3 script/compare.py output.archyb reference/hello_world.archyb
 	./bin/as reference/fibonacci.asm
 	python3 script/compare.py output.archyb reference/fibonacci.archyb
-	# ./bin/as reference/dotprod.asm
+	./bin/as reference/dotprod_u64.asm
 
 mkdir_bin:
 	mkdir -p bin

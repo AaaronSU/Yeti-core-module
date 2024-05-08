@@ -4,6 +4,8 @@
 #include <sys/stat.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <string.h>
+#include <libgen.h>
 
 #define NUMBER_SCALAR_REGISTER 32
 #define NUMBER_VECTOR_REGISTER 32
@@ -12,6 +14,7 @@
 #define SIZE_IMMEDIATE_IN_BYTE 8
 #define MAX_INSTRUCTION_NUMBER 256
 #define MAX_MEMORY_SIZE 1024 * 1024
+#define MAX_FILE_BUFFER_SIZE 256
 #define info(fmt, ...)                                                      \
     do                                                                      \
     {                                                                       \
@@ -103,7 +106,7 @@ typedef struct core_s
     u8 *memory;
     u8 *file_buffer;
     header_t header;
-    FILE *fd;
+    // FILE *fd;
     u8 id;
     u8 type; // coretype, 0 = compute, 1 = management
     // mutex
@@ -113,38 +116,14 @@ typedef struct core_s
     // void (*insn_exec)(...);
 } core_t;
 
-core_t *core_new(char *filename, u8 id)
+core_t *core_new(char *buffer, u8 id)
 {
-    struct stat st;
-    if (stat(filename, &st) != 0)
-    {
-        error("File not found or error accessing file %s for core %d.\n", filename, id);
-        exit(-1);
-    }
-
-    FILE *fichier = fopen(filename, "rb");
-    u8 *buffer = (u8 *)malloc(st.st_size);
-    if (buffer == NULL)
-    {
-        error("File not found or error accessing file %s for core %d.\n", filename, id);
-        fclose(fichier);
-        exit(-1);
-    }
-
-    if (fread(buffer, 1, st.st_size, fichier) != st.st_size)
-    {
-        error("Erreur lors du chargement de données du fichier %s dans le buffer.\n", filename);
-        fclose(fichier);
-        exit(-1);
-    }
-
     core_t *core = (core_t *)malloc(sizeof(core_t)); // Allocate memory for the core
     if (core == NULL)
     {
         error("failed to allocate core of size %zu bytes", sizeof(core_t));
     }
     core->file_buffer = buffer;
-    core->fd = fichier;
 
     core->id = id;
     core->type = 0;
@@ -160,15 +139,14 @@ core_t *core_new(char *filename, u8 id)
     }
     core->IP = 0;
 
-    u8 *memory = (u8 *)malloc(sizeof(MAX_MEMORY_SIZE));
+    u8 *memory = (u8 *)malloc(MAX_MEMORY_SIZE);
+    memset(memory, 0, MAX_MEMORY_SIZE);
     if (memory == NULL)
     {
         free(core);
         error("failed to allocate memory of size %zu bytes", sizeof(core_t));
     }
     core->memory = memory;
-
-    // core->file_buffer = NULL;
 
     return core;
 }
@@ -181,6 +159,56 @@ u64 get_immediate(core_t *core)
 }
 
 static void (*instruction_set[MAX_INSTRUCTION_NUMBER])(core_t *);
+
+void loadu(core_t *core)
+{
+    instruction_t instruction = instruction_new(*(u32 *)&(core->file_buffer[core->IP]));
+    DEBUG_PRINT("--------Avant LOADU--------\n");
+    DEBUG_PRINT("Le registre %d a pour valeur %ld\n"
+                "Le registre %d a pour valeur %ld\n"
+                "Le registre %d a pour valeur %ld\n"
+                "core->memory[**address**] a pour valeur %lx\n",
+                instruction.register_1, core->U[instruction.register_1],
+                instruction.register_2, core->U[instruction.register_2],
+                instruction.register_3, core->U[instruction.register_3],
+                *(u64 *)&(core->memory[core->U[instruction.register_2] + core->U[instruction.register_3] + instruction.offset]));
+    core->U[instruction.register_1] = *(u64 *)&(core->memory[instruction.register_2 + instruction.register_3 + instruction.offset]);
+    DEBUG_PRINT("--------Après LOADU--------\n");
+    DEBUG_PRINT("Le registre %d a pour valeur %ld\n"
+                "Le registre %d a pour valeur %ld\n"
+                "Le registre %d a pour valeur %ld\n"
+                "core->memory[**address**] a pour valeur %lx\n\n",
+                instruction.register_1, core->U[instruction.register_1],
+                instruction.register_2, core->U[instruction.register_2],
+                instruction.register_3, core->U[instruction.register_3],
+                *(u64 *)&(core->memory[core->U[instruction.register_2] + core->U[instruction.register_3] + instruction.offset]));
+    core->IP += SIZE_INSTRUCTION_IN_BYTE;
+}
+
+void storeu(core_t *core)
+{
+    instruction_t instruction = instruction_new(*(u32 *)&(core->file_buffer[core->IP]));
+    DEBUG_PRINT("--------Avant STOREU--------\n");
+    DEBUG_PRINT("Le registre %d a pour valeur %ld\n"
+                "Le registre %d a pour valeur %ld\n"
+                "Le registre %d a pour valeur %ld\n"
+                "core->memory[**address**] a pour valeur %ld\n",
+                instruction.register_1, core->U[instruction.register_1],
+                instruction.register_2, core->U[instruction.register_2],
+                instruction.register_3, core->U[instruction.register_3],
+                *(u64 *)&(core->memory[core->U[instruction.register_2] + core->U[instruction.register_3] + instruction.offset]));
+    core->memory[core->U[instruction.register_2] + core->U[instruction.register_3] + instruction.offset] = core->U[instruction.register_1];
+    DEBUG_PRINT("--------Après STOREU--------\n");
+    DEBUG_PRINT("Le registre %d a pour valeur %ld\n"
+                "Le registre %d a pour valeur %ld\n"
+                "Le registre %d a pour valeur %ld\n"
+                "core->memory[**address**] a pour valeur %ld\n\n",
+                instruction.register_1, core->U[instruction.register_1],
+                instruction.register_2, core->U[instruction.register_2],
+                instruction.register_3, core->U[instruction.register_3],
+                *(u64 *)&(core->memory[core->U[instruction.register_2] + core->U[instruction.register_3] + instruction.offset]));
+    core->IP += SIZE_INSTRUCTION_IN_BYTE;
+}
 
 void movu(core_t *core)
 {
@@ -224,6 +252,48 @@ void addu(core_t *core)
     DEBUG_PRINT("Le registre %d a pour valeur %ld\n"
                 "Le registre %d a pour valeur %ld\n"
                 "Le registre %d a pour valeur %ld\n\n",
+                instruction.register_1, core->U[instruction.register_1],
+                instruction.register_2, core->U[instruction.register_2],
+                instruction.register_3, core->U[instruction.register_3]);
+    core->IP += SIZE_INSTRUCTION_IN_BYTE;
+}
+
+void mulu(core_t *core)
+{
+    instruction_t instruction = instruction_new(*(u32 *)&(core->file_buffer[core->IP]));
+    DEBUG_PRINT("--------Avant Multiplication--------\n");
+    DEBUG_PRINT("Le registre %d a pour valeur %ld\n"
+                "Le registre %d a pour valeur %ld\n"
+                "Le registre %d a pour valeur %ld\n",
+                instruction.register_1, core->U[instruction.register_1],
+                instruction.register_2, core->U[instruction.register_2],
+                instruction.register_3, core->U[instruction.register_3]);
+    core->U[instruction.register_1] = core->U[instruction.register_2] * core->U[instruction.register_3];
+    DEBUG_PRINT("--------Après Multiplication--------\n");
+    DEBUG_PRINT("Le registre %d a pour valeur %ld\n"
+                "Le registre %d a pour valeur %ld\n"
+                "Le registre %d a pour valeur %ld\n\n",
+                instruction.register_1, core->U[instruction.register_1],
+                instruction.register_2, core->U[instruction.register_2],
+                instruction.register_3, core->U[instruction.register_3]);
+    core->IP += SIZE_INSTRUCTION_IN_BYTE;
+}
+
+void fmau(core_t *core)
+{
+    instruction_t instruction = instruction_new(*(u32 *)&(core->file_buffer[core->IP]));
+    DEBUG_PRINT("--------Avant FMA--------\n");
+    DEBUG_PRINT("Le registre %d a pour valeur %ld\n"
+                "Le registre %d a pour valeur %ld\n"
+                "Le registre %d a pour valeur %ld\n",
+                instruction.register_1, core->U[instruction.register_1],
+                instruction.register_2, core->U[instruction.register_2],
+                instruction.register_3, core->U[instruction.register_3]);
+    core->U[instruction.register_1] += core->U[instruction.register_2] * core->U[instruction.register_3];
+    DEBUG_PRINT("--------Avant FMA--------\n");
+    DEBUG_PRINT("Le registre %d a pour valeur %ld\n"
+                "Le registre %d a pour valeur %ld\n"
+                "Le registre %d a pour valeur %ld\n",
                 instruction.register_1, core->U[instruction.register_1],
                 instruction.register_2, core->U[instruction.register_2],
                 instruction.register_3, core->U[instruction.register_3]);
@@ -306,13 +376,15 @@ void outb(core_t *core)
 void hlt(core_t *core)
 {
     info("Core %d successful finished\n", core->id);
-    exit(0); // à enlever pour parallélisme, sinon chut down dès un truc fini
+    core->IP += SIZE_INSTRUCTION_IN_BYTE;
+
+    // exit(0); // à enlever pour parallélisme, sinon chut down dès un truc fini
 }
 
 void undefined_instruction(core_t *core)
 {
     warn("Instruction Set don't defined the following instruction: %d. (maybe yet)", *(u8 *)&(core->file_buffer[core->IP]));
-    exit(1);
+    exit(0);
 }
 
 void core_execute(core_t *self)
@@ -371,8 +443,6 @@ void core_drop(core_t *self)
             free(self->memory);
         if (NULL != self->file_buffer)
             free(self->file_buffer);
-        if (NULL != self->fd)
-            fclose(self->fd);
         free(self);
     }
 }
@@ -383,9 +453,13 @@ void set_up_instruction_set()
         instruction_set[indice] = undefined_instruction;
     if (MAX_INSTRUCTION_NUMBER != 256)
         warn("Consider changing the %s index type to another type to avoid potential issues.", "u8");
+    instruction_set[0] = loadu;
+    instruction_set[6] = storeu;
     instruction_set[13] = movu;
     instruction_set[19] = movui;
     instruction_set[31] = addu;
+    instruction_set[33] = mulu;
+    instruction_set[36] = fmau;
     instruction_set[39] = incu;
 
     instruction_set[74] = cmpu;
@@ -396,22 +470,95 @@ void set_up_instruction_set()
     instruction_set[90] = hlt;
 }
 
+void read_config(char *config_file_name, char **file_buffer_list, u16 *number_of_file)
+{
+    FILE *config_file;
+    char config_file_line[256];
+    char full_path[256];
+    u16 i = 0;
+    u16 number_of_thread = 0;
+
+    config_file = fopen(config_file_name, "r");
+
+    if (config_file == NULL)
+    {
+        error("The configuration file %s cannot be opened.\n", config_file_name);
+        exit(EXIT_FAILURE);
+    }
+
+    if (fscanf(config_file, "%255[^\n]\n", config_file_line) != EOF)
+    {
+        number_of_thread = atoi(config_file_line);
+        printf("number of thread: %d\n", number_of_thread);
+        // Important : déclenche l'erreur lorsqu'il ne s'agit pas un nombre
+    }
+
+    // Lire chaque config_file_line du config_file
+    while ((fscanf(config_file, "%255[^\n]\n", config_file_line) != EOF) && (i < number_of_thread))
+    {
+        // printf("config_file_line: %s\n", config_file_line); // Afficher la config_file_line lue
+        struct stat st;
+        snprintf(full_path, sizeof(full_path), "%s", config_file_line);
+        // printf("full path: %s\n", full_path);
+        if (stat(full_path, &st) != 0)
+        {
+            error("File not found or error accessing file %s.\n", config_file_line);
+            fclose(config_file);
+            exit(EXIT_FAILURE);
+        }
+        FILE *file = fopen(config_file_line, "rb");
+        uint64_t total_size = (uint64_t)st.st_size;
+
+        u8 *buffer = (u8 *)malloc(total_size);
+        if (buffer == NULL)
+        {
+            error("File not found or error accessing file %s.\n", config_file_line);
+            fclose(file);
+            exit(EXIT_FAILURE);
+        }
+
+        if (fread(buffer, 1, total_size, file) != total_size)
+        {
+            fprintf(stderr, "Erreur lors du chargement de données dans le buffer.\n");
+            fclose(file);
+            exit(EXIT_FAILURE);
+        }
+        file_buffer_list[i] = buffer;
+        i++;
+        fclose(file);
+    }
+
+    // Fermer le config_file
+    fclose(config_file);
+    *number_of_file = i;
+}
+
 int main(int argc, char *argv[])
 {
     if (argc != 2)
     {
         fprintf(stderr, "Error: Incorrect number of arguments\n");
-        fprintf(stderr, "Usage: %s <path1> <path2> <path3> ...\n", argv[0]);
+        fprintf(stderr, "Usage: %s <config>\n", argv[0]);
         return 1;
     }
-    core_t *core = core_new(argv[1], 0);
-    instruction_set[22](core);
 
+    char *file_buffer_list[MAX_FILE_BUFFER_SIZE];
+    u16 n;
+
+    read_config(argv[1], file_buffer_list, &n);
     set_up_instruction_set();
 
-    core_execute(core);
+    u16 i = 0;
+    while (i < n && file_buffer_list[i + 1] != NULL)
+    {
+        core_t *core = core_new(file_buffer_list[i], i);
 
-    core_drop(core);
+        core_execute(core);
+
+        core_drop(core);
+
+        i++;
+    }
 
     return 0;
 }

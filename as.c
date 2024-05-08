@@ -3,25 +3,26 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 #define MAGIC_NUMBER htobe64(0x4152434859302E30) // Check that // Checked
 #define HEADER_SIZE 80
 
 FILE *file;
 size_t const MAX_SIZE = 1024 * 1024;
-char string[255];
+char string[1024], *string_end_ptr;
 char *src,
     *src_dump;
 
-long int *symbol_table,
+long long int *symbol_table,
     *symbol_ptr;
 
-long long int token, token_val;
-long long int ival;
+long long int token, token_val, previous_token;
+double double_value;
 long long int line;
 
 unsigned long long int current_address;
-
+bool flag;
 unsigned long long int address_data;
 unsigned long long int size_data;
 unsigned long long int address_code;
@@ -189,6 +190,7 @@ void tokenize()
                 if (token == symbol_ptr[Hash] && !memcmp((char *)symbol_ptr[Name], ch_ptr, (size_t)(src - ch_ptr)))
                 {
                     token = symbol_ptr[Token];
+                    printf("token: %lld\n", token);
                     return;
                 }
                 symbol_ptr = symbol_ptr + SymbolSize;
@@ -197,7 +199,7 @@ void tokenize()
             symbol_ptr[Name] = (long int)ch_ptr;
             symbol_ptr[Hash] = token;
             token = symbol_ptr[Token] = IDENTIFIER;
-
+            printf("token: %lld\n", token);
             // parti pour visualiser
             // int i = -1;
             // while (++i < src - ch_ptr)
@@ -208,26 +210,52 @@ void tokenize()
             // continue;
             return;
         }
-        else if (token >= '0' && token <= '9')
+        else if ((token >= '0' && token <= '9') || token == '.')
         {
             // DEC, ch_ptr with 1 - 9
             if ((token_val = token - '0'))
-                while (*src >= '0' && *src <= '9')
+                while ((*src >= '0' && *src <= '9') || *src == '.')
+                {
+                    if (*src++ == '.')
+                    {
+                        sprintf(string, "%lld.", token_val);
+                        token_val = 0;
+                        while (*src >= '0' && *src <= '9')
+                            token_val = token_val * 10 + *src++ - '0';
+                        // sprintf(string, "%lld", token_val);
+                        double_value = strtod(string, &string_end_ptr);
+                        token = IMMEDIATE;
+                        printf("token: %lld\n", token);
+                        printf("token: %f\n", double_value);
+                        return;
+                    }
                     token_val = token_val * 10 + *src++ - '0';
+                    printf("token_val: %lld\n", token_val);
+                }
+
             // HEX, ch_ptr with 0x
             else if (*src == 'x' || *src == 'X')
                 while ((token = *++src) && ((token >= '0' && token <= '9') || (token >= 'a' && token <= 'f') || (token >= 'A' && token <= 'F')))
                     // COOL!
                     token_val = token_val * 16 + (token & 0xF) + (token >= 'A' ? 9 : 0);
+
+            // else if (*src++ == '.')
+            // {
+
+            //     printf("token value: %lld\n", token_val);
+            //     printf("j'ai trouvé un point.\n");
+
+            //     printf("")
+            // }
             // OCT, start with 0
             else
                 while (*src >= '0' && *src <= '7')
                     token_val = token_val * 8 + *src++ - '0';
             token = IMMEDIATE;
-            printf("Immediate value: %lld\n", token_val);
+            printf("token: %lld\n", token);
             return;
         }
-        else if (token == ' ' || token == ',')
+        else if (token == ' ' || token == ',' || token == '(' || token == ')')
         {
             continue;
         }
@@ -239,24 +267,26 @@ void tokenize()
                 string[src - ch_ptr] = *src;
                 src++;
             }
-            // printf("%s\n", string);
             src++;
             token = CHAR;
+            printf("token: %lld\n", token);
             return;
         }
         else if (token == ':')
         {
             token = COLON;
+            printf("token: %lld\n", token);
             return;
         }
         else if (token == '@')
         {
             token = DEFINE_OR_GET;
+            printf("token: %lld\n", token);
             return;
         }
         else
         {
-            // printf("%c\n", (char)token);
+            printf("token: %lld\n", token);
             printf("not recognize %c\n", (char)token);
             exit(-1);
         }
@@ -375,7 +405,7 @@ void assert_token(long long int tk)
         printf("line %lld: expect token: %lld(%c), get: %lld(%c)\n", line, tk, (char)tk, token, (char)token);
         exit(-1);
     }
-    printf("token: %lld\n", token);
+    // printf("token: %lld\n", token);
 }
 
 void write_immediate(unsigned long long int immediate)
@@ -390,14 +420,14 @@ void write_instruction(long long int opcode, long int reg1, long int reg2, long 
 {
     if (opcode < 0 || opcode >= 256)
     {
-        printf("opcode not available: %lld", opcode); // warning mieux
+        printf("opcode not available: %lld\n", opcode); // warning mieux
     }
     int to_write[1] = {(int)(htobe32(((__uint32_t)opcode << 24) + ((__uint32_t)offset << 15) + ((__uint32_t)reg1 << 10) + ((__uint32_t)reg2 << 5) + ((__uint32_t)reg3)))};
     current_address += 4;
     size_code += 4;
-    printf("\n\n\nto write: %lx\n", htobe32((__uint32_t)opcode << 24) + (offset << 15) + (reg1 << 10) + (reg2 << 5) + reg3);
+    // printf("\n\n\nto write: %lx\n", htobe32((__uint32_t)opcode << 24) + (offset << 15) + (reg1 << 10) + (reg2 << 5) + reg3);
     fwrite(to_write, 4, 1, file);
-    printf("reg1: %ld, reg2: %ld, reg3: %ld, offset: %ld\n", reg1, reg2, reg3, offset);
+    // printf("reg1: %ld, reg2: %ld, reg3: %ld, offset: %ld\n", reg1, reg2, reg3, offset);
 }
 
 void parse_data_section()
@@ -445,6 +475,32 @@ void parse_data_section()
         size_data += len + 1;
         current_address += len + 1;
     }
+    else if (token == F64)
+    {
+        tokenize();
+        assert_token(DEFINE_OR_GET);
+        tokenize();
+        assert_token(IDENTIFIER);
+        previous_token = token;
+        tokenize();
+        assert_token(IMMEDIATE);
+        memcpy(&symbol_ptr[Value], &double_value, 8);
+        printf("token_value : %f\n\n", (double)symbol_ptr[Value]);
+        tokenize();
+    }
+    else if (token == U64)
+    {
+        tokenize();
+        assert_token(DEFINE_OR_GET);
+        tokenize();
+        assert_token(IDENTIFIER);
+        previous_token = token;
+        tokenize();
+        assert_token(IMMEDIATE);
+        symbol_ptr[Value] = token_val;
+
+        tokenize();
+    }
     else
     {
         printf("not implemented yet the following token: %lld\n", token);
@@ -467,10 +523,10 @@ void parse_code_section()
             tokenize();
             assert_token(IDENTIFIER);
             val = symbol_ptr[Value];
-            printf("opcode: %lx\n", opcode);
+            // printf("opcode: %lx\n", opcode);
 
-            printf("identifiant adress: %lx\n", val);
-            printf("reg1: %lx\n", reg1);
+            // printf("identifiant adress: %lx\n", val);
+            // printf("reg1: %lx\n", reg1);
             tokenize();
             write_instruction(opcode, reg1, 0, 0, 0);
             write_immediate((long long unsigned int)val);
@@ -490,10 +546,10 @@ void parse_code_section()
         assert_token(IDENTIFIER);
         val = symbol_ptr[Value];
         write_immediate((long long unsigned int)val);
-        printf("opcode: %lx\n", opcode);
+        // printf("opcode: %lx\n", opcode);
 
-        printf("identifiant adress: %lx\n", val);
-        printf("reg1: %lx\n", reg1);
+        // printf("identifiant adress: %lx\n", val);
+        // printf("reg1: %lx\n", reg1);
         tokenize();
     }
     else if (token == OUTB || token == OUTU || token == INCU)
@@ -504,29 +560,77 @@ void parse_code_section()
         write_instruction(opcode, reg1, 0, 0, 0);
         tokenize();
     }
+    else if (token == OUTF)
+    {
+        tokenize();
+        assert_token(SCALAR_FLOAT_REGISTER);
+        reg1 = symbol_ptr[Value];
+        write_instruction(opcode, reg1, 0, 0, 0);
+        tokenize();
+    }
     else if (token == HLT)
     {
         write_instruction(opcode, 0, 0, 0, 0);
         tokenize();
     }
-    else if (token == ADDU)
+    else if (token == ADDU || token == MULU)
     {
         opcode = token;
-        printf("%ld\n\n", opcode);
+        // printf("%ld\n\n", opcode);
         tokenize();
         assert_token(SCALAR_UNSIGNED_INT_REGISTER);
         reg1 = symbol_ptr[Value];
-        printf("%lx\n\n\n", symbol_ptr[Value]);
+        // printf("%llx\n\n\n", symbol_ptr[Value]);
         tokenize();
         assert_token(SCALAR_UNSIGNED_INT_REGISTER);
         reg2 = symbol_ptr[Value];
-        printf("%lx\n\n\n", symbol_ptr[Value]);
+        // printf("%llx\n\n\n", symbol_ptr[Value]);
         tokenize();
         assert_token(SCALAR_UNSIGNED_INT_REGISTER);
         reg3 = symbol_ptr[Value];
-        printf("%lx\n\n\n", symbol_ptr[Value]);
+        // printf("%llx\n\n\n", symbol_ptr[Value]);
         tokenize();
-        printf("%ld\n\n", opcode);
+        // printf("%ld\n\n", opcode);
+        write_instruction(opcode, reg1, reg2, reg3, 0);
+    }
+    else if (token == STOREU)
+    {
+        opcode = token;
+        // printf("%ld\n\n", opcode);
+        tokenize();
+        assert_token(SCALAR_UNSIGNED_INT_REGISTER);
+        reg1 = symbol_ptr[Value];
+        // printf("%llx\n\n\n", symbol_ptr[Value]);
+        tokenize();
+        assert_token(SCALAR_UNSIGNED_INT_REGISTER);
+        reg2 = symbol_ptr[Value];
+        // printf("%llx\n\n\n", symbol_ptr[Value]);
+        tokenize();
+        assert_token(SCALAR_UNSIGNED_INT_REGISTER);
+        reg3 = symbol_ptr[Value];
+        // printf("%llx\n\n\n", symbol_ptr[Value]);
+        tokenize();
+        // printf("%ld\n\n", opcode);
+        write_instruction(opcode, reg1, reg2, reg3, 0);
+    }
+    else if (token == LOADU)
+    {
+        opcode = token;
+        // printf("%ld\n\n", opcode);
+        tokenize();
+        assert_token(SCALAR_UNSIGNED_INT_REGISTER);
+        reg1 = symbol_ptr[Value];
+        // printf("%llx\n\n\n", symbol_ptr[Value]);
+        tokenize();
+        assert_token(SCALAR_UNSIGNED_INT_REGISTER);
+        reg2 = symbol_ptr[Value];
+        // printf("%llx\n\n\n", symbol_ptr[Value]);
+        tokenize();
+        assert_token(SCALAR_UNSIGNED_INT_REGISTER);
+        reg3 = symbol_ptr[Value];
+        // printf("%llx\n\n\n", symbol_ptr[Value]);
+        tokenize();
+        // printf("%ld\n\n", opcode);
         write_instruction(opcode, reg1, reg2, reg3, 0);
     }
     else if (token == MOVU || token == CMPU)
@@ -540,6 +644,59 @@ void parse_code_section()
         tokenize();
         write_instruction(opcode, reg1, reg2, 0, 0);
     }
+    else if (token == MOVFI)
+    {
+        opcode = token;
+        tokenize();
+        assert_token(SCALAR_FLOAT_REGISTER);
+        reg1 = symbol_ptr[Value];
+        tokenize();
+        assert_token(IMMEDIATE);
+        printf("token_value: %f\n", double_value);
+        tokenize();
+        write_instruction(opcode, reg1, 0, 0, 0);
+        write_immediate((unsigned long long int)double_value);
+    }
+    else if (token == FMAF)
+    {
+        opcode = token;
+        // printf("%ld\n\n", opcode);
+        tokenize();
+        assert_token(SCALAR_FLOAT_REGISTER);
+        reg1 = symbol_ptr[Value];
+        // printf("%llx\n\n\n", symbol_ptr[Value]);
+        tokenize();
+        assert_token(SCALAR_FLOAT_REGISTER);
+        reg2 = symbol_ptr[Value];
+        // printf("%llx\n\n\n", symbol_ptr[Value]);
+        tokenize();
+        assert_token(SCALAR_FLOAT_REGISTER);
+        reg3 = symbol_ptr[Value];
+        // printf("%llx\n\n\n", symbol_ptr[Value]);
+        tokenize();
+        // printf("%ld\n\n", opcode);
+        write_instruction(opcode, reg1, reg2, reg3, 0);
+    }
+    else if (token == FMAU)
+    {
+        opcode = token;
+        // printf("%ld\n\n", opcode);
+        tokenize();
+        assert_token(SCALAR_UNSIGNED_INT_REGISTER);
+        reg1 = symbol_ptr[Value];
+        // printf("%llx\n\n\n", symbol_ptr[Value]);
+        tokenize();
+        assert_token(SCALAR_UNSIGNED_INT_REGISTER);
+        reg2 = symbol_ptr[Value];
+        // printf("%llx\n\n\n", symbol_ptr[Value]);
+        tokenize();
+        assert_token(SCALAR_UNSIGNED_INT_REGISTER);
+        reg3 = symbol_ptr[Value];
+        // printf("%llx\n\n\n", symbol_ptr[Value]);
+        tokenize();
+        // printf("%ld\n\n", opcode);
+        write_instruction(opcode, reg1, reg2, reg3, 0);
+    }
     else
     {
         printf("not implemented yet the following token: %lld\n", token);
@@ -551,7 +708,7 @@ void parse_code_section()
 void parse()
 {
     // printf("%s\n", src);
-    printf("token: %lld\n", token);
+    // printf("token: %lld\n", token);
     if (token == DATA_ADDRESS || token == CODE_ADDRESS)
     {
         long int previous_token = token;
@@ -644,15 +801,25 @@ int main(int argc, char **argv)
     current_address = HEADER_SIZE;
     // prepare keywords for symbol table
     keyword();
-    // while (*src != 0)
-    // {
-    //     // printf("%s\n", src);
-    //     tokenize();
-    //     printf("token: %lld\n", token);
-    // }
-    // src = src_dump;
-    // printf("\n");
 
+    symbol_ptr = symbol_table;
+    while (symbol_ptr[Token])
+    {
+        printf("%lld, %s, %lld\n\n\n", symbol_ptr[Token], (char *)symbol_ptr[Name], symbol_ptr[Value]);
+        symbol_ptr = symbol_ptr + SymbolSize;
+    }
+
+    printf("----------------------------------------\n");
+    while (*src != 0)
+    {
+        // printf("%s\n", src);
+        tokenize();
+        // printf("token: %lld\n", token);
+    }
+    printf("\n");
+
+    src = src_dump;
+    printf("----------------------------------------\n");
     tokenize();
     parse();
 
@@ -664,7 +831,6 @@ int main(int argc, char **argv)
     //     printf("%ld, %s, %ld\n\n", symbol_ptr[Token], (char *)symbol_ptr[Name], symbol_ptr[Value]);
     //     symbol_ptr = symbol_ptr + SymbolSize;
     // }
-    // printf("%c, %c", 0x5c, 0x6e);
     free(src_dump);
     fclose(file);
 
