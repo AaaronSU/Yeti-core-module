@@ -1,14 +1,14 @@
 all: run_par
 
 run_par: mkdir_bin
-	gcc vm.c -o bin/vm
-	./bin/vm script.conf
+	gcc vm.c -o bin/vm -lm
+	# ./bin/vm script.conf
 
 run: mkdir_bin
 	gcc vm.c -o bin/vm 
 	./bin/vm reference/hello_world.archyb
 	./bin/vm reference/fibonacci.archyb
-	./bin/vm reference/dotprod_u64.archyb
+	# ./bin/vm reference/dotprod_u64.archyb
 
 
 vm_debug: mkdir_bin
@@ -30,11 +30,14 @@ verify_as: mkdir_bin
 mkdir_bin:
 	mkdir -p bin
 
+bench: bench.c
+	gcc bench.c -o bin/bench
+
 .PHONY: clean check
 
 clean:
 	rm -f bin/*
 
 check: test.c
-	gcc test.c -o bin/test -lcmocka
+	gcc test.c -o bin/test -lcmocka -lm
 	./bin/test

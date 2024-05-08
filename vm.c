@@ -7,6 +7,12 @@
 #include <string.h>
 #include <libgen.h>
 
+#include <math.h>
+#include <time.h>
+
+#define PERF 0
+#define MAX_SAMPLES 5
+
 #define NUMBER_SCALAR_REGISTER 32
 #define NUMBER_VECTOR_REGISTER 32
 #define SIZE_INSTRUCTION 32
@@ -393,6 +399,110 @@ void undefined_instruction(core_t *core)
     exit(0);
 }
 
+//////////////////////////// MESURE DE PERF /////////////////////////
+
+//
+void sort_f64(f64 *restrict a, u64 n)
+{
+    for (u64 i = 0; i < n; i++)
+        for (u64 j = i + 1; j < n; j++)
+            if (a[i] > a[j])
+            {
+                f64 tmp = a[i];
+
+                a[i] = a[j];
+                a[j] = tmp;
+            }
+}
+
+//
+f64 mean_f64(f64 *restrict a, u64 n)
+{
+    f64 m = 0.0;
+
+    for (u64 i = 0; i < n; i++)
+        m += a[i];
+
+    m /= (f64)n;
+
+    return m;
+}
+
+//
+f64 stddev_f64(f64 *restrict a, u64 n)
+{
+    f64 d = 0.0;
+    f64 m = mean_f64(a, n);
+
+    for (u64 i = 0; i < n; i++)
+        d += (a[i] - m) * (a[i] - m);
+
+    d /= (f64)(n - 1);
+
+    return sqrt(d);
+}
+
+void measure_performance(core_t *self, const header_t header)
+{
+    u8 opcode;
+    // print header
+    printf("%10s; %15s; %10s; %15s; %15s; %15s; %26s; %10s\n",
+           "title",
+           "B",
+           "r", "min", "max", "mean", "stddev (%)", "MiB/s");
+
+    // TODO : taille (défini par martin, à voir)
+    f64 size_b = 8 * 3;
+    f64 size_kib = size_b / (1024.0);
+    f64 size_mib = size_b / (1024.0 * 1024.0);
+    f64 size_gib = size_b / (1024.0 * 1024.0 * 1024.0);
+
+    f64 elapsed = 0.0;
+    struct timespec t1, t2;
+    f64 samples[MAX_SAMPLES];
+    size_t r = 50;
+    // size_t to_read = self->IP;
+
+    while (self->IP < header.size_total - SIZE_INSTRUCTION_IN_BYTE)
+    {
+        size_t to_read = self->IP;
+        for (u64 i = 0; i < MAX_SAMPLES; ++i)
+        {
+            self->IP = to_read;
+            opcode = *(u8 *)&(self->file_buffer[self->IP]);
+            clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
+            for (u64 j = 0; j < r; ++j)
+            {
+                instruction_set[opcode](self);
+            }
+            clock_gettime(CLOCK_MONOTONIC_RAW, &t2);
+            elapsed = (f64)(t2.tv_nsec - t1.tv_nsec) / (f64)r;
+            samples[i] = elapsed;
+            self->IP = to_read;
+            instruction_set[opcode](self);
+        }
+        sort_f64(samples, MAX_SAMPLES);
+        f64 min = samples[0];
+        f64 max = samples[MAX_SAMPLES - 1];
+        f64 mean = mean_f64(samples, MAX_SAMPLES);
+        f64 dev = stddev_f64(samples, MAX_SAMPLES);
+        f64 mbps = size_mib / (mean / 1e9);
+
+        printf("%d; %15.3lf; %10lu; %15.3lf; %15.3lf; %15.3lf; %15.3lf (%6.3lf %%); %10.3lf\n",
+               opcode,
+               size_b, // 3 matices
+               r,
+               min,
+               max,
+               mean,
+               dev,
+               (dev * 100.0 / mean),
+               mbps);
+    }
+}
+
+//////////////////////////// MESURE DE PERF /////////////////////////
+
 void core_execute(core_t *self)
 {
     header_t header = *(header_t *)(self->file_buffer);
@@ -433,11 +543,19 @@ void core_execute(core_t *self)
 
     self->IP = header.address_code;
 
+#if (PERF == 1)
+    // Mesure de la performance
+    measure_performance(self, header);
+#endif
+#if (PERF == 0)
+
     while (self->IP < header.size_total)
     {
         u8 opcode = *(u8 *)&(self->file_buffer[self->IP]);
         instruction_set[opcode](self);
     }
+
+#endif
 }
 
 void core_drop(core_t *self)
