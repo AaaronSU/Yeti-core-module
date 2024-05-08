@@ -5,26 +5,16 @@
 #include <cmocka.h>
 
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/wait.h>
 
 #include "vm.c"
 
 #define MAX_INTERATION 1000
 #define SIZE_FILE ((sizeof(u32) + sizeof(u64)) * MAX_INTERATION)
-
-// Test sur instruction
-/*
-    instruction_set[13] = movu;
-    instruction_set[19] = movui;
-    instruction_set[31] = addu;
-    instruction_set[39] = incu;
-
-    instruction_set[74] = cmpu;
-    instruction_set[80] = jl;
-    instruction_set[84] = outu;
-
-    instruction_set[88] = outb;
-    instruction_set[90] = hlt;
-*/
 
 static core_t *core_init()
 {
@@ -121,12 +111,10 @@ static void test_movui(void **state)
         u8 r1 = random() % 32;
         u64 imm = random();
 
-        u32 instruction = create_instruction(0, 0, r1, 0, 0);
-
         u32 *ptr_inst = (u32 *)(core->file_buffer + core->IP);
         u64 *ptr_imm = (u64 *)(core->file_buffer + core->IP + sizeof(u32));
 
-        *ptr_inst = instruction;
+        *ptr_inst = create_instruction(0, 0, r1, 0, 0);
         *ptr_imm = htobe64(imm);
 
         movui(core);
@@ -151,11 +139,11 @@ static void test_addu(void **state)
         core->U[r2] = v2;
         core->U[r3] = v3;
 
-        u32* ptr = (u32 *)(core->file_buffer + core->IP);
+        u32 *ptr = (u32 *)(core->file_buffer + core->IP);
         *ptr = create_instruction(0, 0, r1, r2, r3);
 
         addu(core);
-        
+
         if (r2 == r3)
         {
             assert_int_equal(core->U[r1], v3 + v3);
@@ -164,9 +152,140 @@ static void test_addu(void **state)
         {
             assert_int_equal(core->U[r1], (v2 + v3));
         }
-        
+
+        // CF[0] = 1 si opération = 0
+        if (core->U[r1] == 0)
+        {
+            assert_true(core->CF[0]);
+        }
     }
     core_drop(core);
+}
+
+static void test_incu(void **state)
+{
+    core_t *core = core_init();
+    for (int i = 0; i < MAX_INTERATION; ++i)
+    {
+        u8 r1 = random() % 32;
+        u64 v1 = random();
+        core->U[r1] = v1;
+
+        u32 *ptr = (u32 *)(core->file_buffer + core->IP);
+        *ptr = create_instruction(0, 0, r1, 0, 0);
+
+        incu(core);
+
+        assert_int_equal(core->U[r1], v1 + 1);
+    }
+    core_drop(core);
+}
+
+static void test_cmpu(void **state)
+{
+    core_t *core = core_init();
+
+    // U[r1] == U[r2]
+    for (int i = 0; i < MAX_INTERATION; ++i)
+    {
+        
+        u8 r1 = rand() % 32;
+        u8 r2 = rand() % 32;
+
+        u64 v1 = rand();
+
+        core->U[r1] = v1;
+        core->U[r2] = v1;
+
+        u32 *ptr = (u32 *)(core->file_buffer + core->IP);
+        *ptr = create_instruction(0, 0, r1, r2, 0);
+
+        cmpu(core);
+
+        assert_true(core->CF[7]);
+        assert_false(core->CF[6]);
+        assert_false(core->CF[5]);
+        assert_true(core->CF[4]);
+        assert_true(core->CF[2]);
+        assert_false(core->CF[1]);
+        assert_false(core->CF[0]);
+    }
+
+    // U[r1] > U[r2]
+    for (int i = 0; i < MAX_INTERATION; ++i)
+    { 
+        u8 r1 = rand() % 32;
+        u8 temp = rand() % 32;
+        u8 r2 = (temp == r1) ? (r1 + 1) % 32 : temp;
+
+        u64 v1 = (rand() % (RAND_MAX / 2)) + (RAND_MAX / 2);
+        u64 v2 = (rand() % (RAND_MAX / 2));
+
+        core->U[r1] = v1;
+        core->U[r2] = v2;
+
+        core->IP = 0;
+
+        u32 *ptr = (u32 *)(core->file_buffer + core->IP);
+        *ptr = create_instruction(0, 0, r1, r2, 0);
+
+        cmpu(core);
+
+        assert_false(core->CF[7]);
+        assert_true(core->CF[6]);
+        assert_true(core->CF[5]);
+        assert_true(core->CF[4]);
+        assert_false(core->CF[2]);
+        assert_false(core->CF[1]);
+        assert_false(core->CF[0]);
+    }
+    
+    core_drop(core);
+}
+
+static void test_jl(void **state)
+{
+    core_t *core = core_init();
+    // dépassement ? 
+    // A GERER ==> DONNE PROBLEME MALLOC DEVRAIT GERER LE FAIT DE DEPASSER, MESSAGE DERREUR OU modulo?? 
+
+    // Test sans dépassement
+    for (int i = 0; i < MAX_INTERATION; ++i)
+    {
+        core->IP = 0;
+        core->CF[3] = true;
+
+        // TODO : vérifier que ça dépasse vraiment pas la taille du buffer
+        u8 size = ((rand() * SIZE_INSTRUCTION_IN_BYTE) % SIZE_FILE);
+
+        u64 *ptr_addr = (u64 *)(core->file_buffer + core->IP + sizeof(u32));
+
+        *ptr_addr = htobe64(size);
+        jl(core);
+
+        assert_int_equal(core->IP, size);
+    }
+
+    core_drop(core);
+}
+
+static void test_outu(void** state)
+{
+    /* core_t* core = core_init();
+    u8 * chaine = "hello";
+    core->U[0] = (u64)(*chaine);
+
+    u64 *ptr = (u64 *)(core->file_buffer + core->IP);
+    *ptr = 0;
+
+    int out = open("./out.dat", O_CREAT | O_WRONLY | O_TRUNC, 0600); // peut creer des problemes
+    dup2(out, STDOUT_FILENO); // aussi
+    outu(core);
+    dup2(STDOUT_FILENO, out);
+
+    close(out);
+
+    core_drop(core); */
 }
 
 int main(void)
@@ -176,6 +295,10 @@ int main(void)
         cmocka_unit_test(test_movu),
         cmocka_unit_test(test_movui),
         cmocka_unit_test(test_addu),
+        cmocka_unit_test(test_incu),
+        cmocka_unit_test(test_cmpu),
+        cmocka_unit_test(test_jl),
+        //cmocka_unit_test(test_outu),
     };
     result |= cmocka_run_group_tests_name("vm", tests, NULL, NULL);
 
