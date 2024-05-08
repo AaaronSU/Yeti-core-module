@@ -494,7 +494,13 @@ void read_config(char *config_file_name, char **file_buffer_list, u16 *number_of
     if (fscanf(config_file, "%255[^\n]\n", config_file_line) != EOF)
     {
         number_of_thread = atoi(config_file_line);
-        error("The configuration file start with %d thread, it need to be the following format : <int> <path1> <path2> ...\n", number_of_thread);
+        if (number_of_thread == 0)
+        {
+            error("The configuration file start with %d thread, it need to be the following format : <int> <path1> <path2> ...\n", number_of_thread);
+            fclose(config_file);
+            exit(EXIT_FAILURE);
+        }
+
         // Important : déclenche l'erreur lorsqu'il ne s'agit pas un nombre
     }
 
