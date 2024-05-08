@@ -544,6 +544,7 @@ void read_config(char *config_file_name, char **file_buffer_list, u16 *number_of
     *number_of_file = i;
 }
 
+#ifndef CMOCKA_H_
 int main(int argc, char *argv[])
 {
     if (argc != 2)
