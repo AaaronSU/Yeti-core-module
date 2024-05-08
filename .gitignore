@@ -56,3 +56,5 @@ bin/
 garbage/
 .vscode/
 output.archyb
+test*
+script.conf
