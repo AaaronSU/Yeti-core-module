@@ -9,7 +9,7 @@
 #include "vm.c"
 
 #define MAX_INTERATION 1000
-#define SIZE_FILE (SIZE_INSTRUCTION * MAX_INTERATION)
+#define SIZE_FILE (sizeof(u32) * MAX_INTERATION)
 
 
 // Test sur instruction
@@ -27,7 +27,7 @@ instruction_set[13] = movu;
     instruction_set[90] = hlt;
 */
 
-static core_t *init_core()
+static core_t* core_init()
 {
     core_t *core = (core_t *)malloc(sizeof(core_t));
     if (core == NULL)
@@ -47,7 +47,7 @@ static core_t *init_core()
 
     if (file_buffer == NULL)
     {
-        printf("failed to allocate file buffer of size %u bytes", SIZE_FILE);
+        printf("failed to allocate file buffer of size %lu bytes", SIZE_FILE);
         free(memory);
         free(core);
         exit(1);
@@ -72,6 +72,7 @@ static core_t *init_core()
     return core;
 }
 
+
 static u32 create_instruction(u8 opcode, u16 offset, u8 register_1, u8 register_2, u8 register_3)
 {
     return htobe32(opcode << (SIZE_INSTRUCTION - 8) | offset << (SIZE_INSTRUCTION - 17) | register_1 << (SIZE_INSTRUCTION - 22) | register_2 << (SIZE_INSTRUCTION - 27) | register_3);
@@ -79,10 +80,12 @@ static u32 create_instruction(u8 opcode, u16 offset, u8 register_1, u8 register_
 
 static void test_movu(void **state)
 {
-    core_t *core = init_core();
+    core_t *core = core_init();
     
+    // U[register_1] = U[register_2]
     for (int i = 0; i < MAX_INTERATION; ++i)
     {
+        // Peut-être le meme registre, pas de soucis avec ça.
         int register_1 = random() % 32;
         int register_2 = random() % 32;
 
@@ -91,15 +94,21 @@ static void test_movu(void **state)
 
         *ptr = instruction;
         core->U[register_1] = random();
-        int val_r2 = (core->U[register_1] == 0) ? 1 : core->U[register_1] / 2;
+
+        int val_r2 = (core->U[register_1] == 0) ? 1 : (core->U[register_1] / 2) ;
         core->U[register_2] = val_r2;
 
+        if (register_1 != register_2) 
+        {
+            assert_int_not_equal(core->U[register_1], core->U[register_2]);
+        }
+        
         movu(core);
-
         assert_int_equal(core->U[register_1], core->U[register_2]);
         assert_int_equal(val_r2, core->U[register_2]);
     }
 
+    core_drop(core);
 }
 
 int main(void)

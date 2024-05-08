@@ -160,7 +160,7 @@ core_t *core_new(char *filename, u8 id)
     }
     core->IP = 0;
 
-    u8 *memory = (u8 *)malloc(sizeof(MAX_MEMORY_SIZE));
+    u8 *memory = (u8 *)malloc(MAX_MEMORY_SIZE);
     if (memory == NULL)
     {
         free(core);
@@ -283,7 +283,7 @@ void jl(core_t *core)
 void outu(core_t *core)
 {
     instruction_t instruction = instruction_new(*(u32 *)&(core->file_buffer[core->IP]));
-    printf("%ld\n", core->U[instruction.register_1]);
+    printf("%ld \n", core->U[instruction.register_1]);
     core->IP += SIZE_INSTRUCTION_IN_BYTE;
 }
 
@@ -396,6 +396,7 @@ void set_up_instruction_set()
     instruction_set[90] = hlt;
 }
 
+#ifndef CMOCKA_H_
 int main(int argc, char *argv[])
 {
     if (argc != 2)
@@ -415,3 +416,4 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+#endif
