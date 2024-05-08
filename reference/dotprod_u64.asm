@@ -8,19 +8,19 @@ code:
 	movui u1, 10	 # Number of array elements boundary
 	movui u2, 8	 # sizeof(f64)
 	mulu  u1, u1, u2 # Array size in bytes (loop boundary)
-	movfi f0, 0.0	 # Accumulator
+	movui u24, 0	 # Accumulator
 
 	movui u3, @a	
 	movui u4, @b
 
-	movfi f1, 1.1	 # Initializer for a
-	movfi f2, 2.2	 # Initializer for b
+	movui u25, 1	 # Initializer for a
+	movui u26, 2	 # Initializer for b
 
 	# Initialize arrays
 _init_loop:
 
-	storef (u3, u0), f1
-	storef (u4, u0), f2
+	storeu (u3, u0), u25
+	storeu (u4, u0), u26
 
 	addu u0, u0, u2
 	cmpu u0, u1
@@ -31,15 +31,15 @@ _init_loop:
 	# Compute dotprod
 _dotprod_loop:
 
-	loadf f1, (u3, u0)	# Load 8-byte DP FP value from a's memory
-	loadf f2, (u4, u0)	# Load 8-byte DP FP value from b's memory
+	loadu u25, (u3, u0)	# Load 8-byte DP FP value from a's memory
+	loadu u26, (u4, u0)	# Load 8-byte DP FP value from b's memory
 
-	fmaf f0, f1, f2		# f0 += f1 * f2
+	fmau u24, u25, u26		# u24 += u25 * u26
 
 	addu u0, u0, u2		# u0 += 8 bytes
 	cmpu u0, u1
 	jl _dotprod_loop
 
-	outf f0
+	outu u24
 
 	hlt
