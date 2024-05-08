@@ -10,11 +10,15 @@
 #define NUMBER_SCALAR_REGISTER 32
 #define NUMBER_VECTOR_REGISTER 32
 #define SIZE_INSTRUCTION 32
-#define SIZE_INSTRUCTION_IN_BYTE SIZE_INSTRUCTION / 8 // 4
+// SIZE_INSTRUCTION_IN_BYTE = 4
+#define SIZE_INSTRUCTION_IN_BYTE SIZE_INSTRUCTION / 8
 #define SIZE_IMMEDIATE_IN_BYTE 8
 #define MAX_INSTRUCTION_NUMBER 256
 #define MAX_MEMORY_SIZE 1024 * 1024
 #define MAX_FILE_BUFFER_SIZE 256
+// IF YOU CHANGE MAX_FILE_NAME_SIZE, YOU NEED TO CHANGE ARGUMENTS OF FSCANF IN READ_CONFIG FUNCTION,
+// OTHERWISE, THIS DOESN'T WORK PROPERLY
+#define MAX_FILE_NAME_SIZE 256
 #define info(fmt, ...)                                                      \
     do                                                                      \
     {                                                                       \
@@ -122,6 +126,7 @@ core_t *core_new(char *buffer, u8 id)
     if (core == NULL)
     {
         error("failed to allocate core of size %zu bytes", sizeof(core_t));
+        exit(EXIT_FAILURE);
     }
     core->file_buffer = buffer;
 
@@ -145,6 +150,7 @@ core_t *core_new(char *buffer, u8 id)
     {
         free(core);
         error("failed to allocate memory of size %zu bytes", sizeof(core_t));
+        exit(EXIT_FAILURE);
     }
     core->memory = memory;
 
@@ -432,7 +438,6 @@ void core_execute(core_t *self)
         u8 opcode = *(u8 *)&(self->file_buffer[self->IP]);
         instruction_set[opcode](self);
     }
-    // instruction_set[19](self);
 }
 
 void core_drop(core_t *self)
@@ -489,7 +494,7 @@ void read_config(char *config_file_name, char **file_buffer_list, u16 *number_of
     if (fscanf(config_file, "%255[^\n]\n", config_file_line) != EOF)
     {
         number_of_thread = atoi(config_file_line);
-        printf("number of thread: %d\n", number_of_thread);
+        error("The configuration file start with %d thread, it need to be the following format : <int> <path1> <path2> ...\n", number_of_thread);
         // Important : déclenche l'erreur lorsqu'il ne s'agit pas un nombre
     }
 
@@ -549,7 +554,7 @@ int main(int argc, char *argv[])
     set_up_instruction_set();
 
     u16 i = 0;
-    while (i < n && file_buffer_list[i + 1] != NULL)
+    while (i < n && file_buffer_list[i] != NULL)
     {
         core_t *core = core_new(file_buffer_list[i], i);
 
