@@ -22,6 +22,11 @@ verify_as: mkdir_bin
 mkdir_bin:
 	mkdir -p bin
 
+.PHONY: clean check
+
 clean:
-	rm bin/header_reader
-	rm bin/as
+	rm -f bin/*
+
+check: test.c
+	gcc test.c -o bin/test -lcmocka
+	./bin/test
