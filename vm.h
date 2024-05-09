@@ -149,4 +149,6 @@ void set_up_instruction_set();
 
 void read_config(char *config_file_name, char **file_buffer_list, u16 *number_of_file);
 
+void excute_program();
+
 #endif

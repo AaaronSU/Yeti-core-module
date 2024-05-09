@@ -8,8 +8,9 @@ run_par: mkdir_bin
 run: mkdir_bin
 	#gcc vm.c -o bin/vm -Wall -Wconversion -Wextra
 	gcc main.c vm.c -o bin/vm -Wall -Wconversion -Wextra -lm
-	./bin/vm reference/hello_world.archyb
-	./bin/vm reference/fibonacci.archyb
+	./bin/vm script.conf
+	# ./bin/vm reference/hello_world.archyb
+	# ./bin/vm reference/fibonacci.archyb
 	# ./bin/vm reference/dotprod_u64.archyb
 
 
@@ -35,7 +36,7 @@ mkdir_bin:
 
 bench: bench.c
 	gcc bench.c vm.c -o bin/bench -lm -g
-	./bin/bench
+	./bin/bench 
 
 .PHONY: clean check
 
