@@ -33,10 +33,12 @@ static core_t *core_init()
         exit(1);
     }
 
+    /*
     for (int i = 0; i < MAX_MEMORY_SIZE; ++i)
     {
         *(memory + i) = (u8)i;
     }
+    */
 
     core->memory = memory;
 
@@ -44,7 +46,7 @@ static core_t *core_init()
 
     for (int i = 0; i < NUMBER_SCALAR_REGISTER; ++i)
     {
-        core->U[i] = (rand() % (MAX_MEMORY_SIZE / 2)); // pour les déplacements mémoires
+        core->U[i] = (rand() % (MAX_MEMORY_SIZE / 3)); // pour les déplacements mémoires
         core->S[i] = (i64)rand();
         core->F[i] = (f64)rand();
     }
@@ -137,13 +139,17 @@ void mesure_performance_scalaire(void (*opcode)(core_t *), u64 r, const u8 *titl
         u8 r3 = rand() % 32;
         u16 offset = 0; // pour l'instant parce que flemme de calculer
 
-        //printf("r1: %u\tr2: %u\tr3: %u\tu_r1: %lu\tu_r2: %lu\tu_r3: %lu\n", r1, r2, r3, core->U[r1], core->U[r2], core->U[r3]);
-
         u32 *ptr_inst = (u32 *)(core->file_buffer + core->IP);
         u64 *ptr_imm = (u64 *)(core->file_buffer + core->IP + sizeof(u32));
 
         *ptr_inst = create_instruction(0, offset, r1, r2, r3);
         *ptr_imm = htobe64((rand() % size_file_buffer)); // pour les sauts d'adresse mémoire
+
+        core->U[r1] = 0;
+        core->U[r2] = 0;
+        core->U[r3] = 0;
+
+        //printf("r1: %u\tr2: %u\tr3: %u\tu_r1: %lu\tu_r2: %lu\tu_r3: %lu\n", r1, r2, r3, core->U[r1], core->U[r2], core->U[r3]);
 
         clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
         for (int j = 0; j < ITERATION; ++j)
@@ -181,6 +187,7 @@ void mesure_performance_scalaire(void (*opcode)(core_t *), u64 r, const u8 *titl
 
 }
 
+//
 int main()
 {
     Opcode opcode_tobench[] =
@@ -205,7 +212,7 @@ int main()
 
     u64 r = 1000;
 
-    for (int i = 0; i < 10; ++i)
+    for (int i = 0; i < 10 - 1; ++i)
     {
         mesure_performance_scalaire(opcode_tobench[i].opcode, r, opcode_tobench[i].name);
     }
