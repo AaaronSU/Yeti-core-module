@@ -4,26 +4,13 @@ Une réécriture du projet FYMC
 La partie assembleur s'inspire du projet et réutilise certaines fonctions du compilateur C4 disponibles à l'adresse suivante : https://github.com/rswier/c4
 
 ---
-author: FYMC
-date: 2024
-header-includes:
-  - "<style type=\"text/css\">`{=html}"
-  - ".styledtable col:nth-of-type(1) { width: 10%; background: white; }`{=html}"
-  - ".styledtable col:nth-of-type(2) { width: 30%; background: white; }`{=html}"
-  - ".styledtable col:nth-of-type(3) { width: 60%; background: white; }`{=html}"
-  - "`</style>`{=html}"
+
+author: FYMC\
+date: 2024\
 title: ARCHY CPU instruction set architecture
+
 ---
 
-`<style type="text/css">`{=html}
-
-`.styledtable col:nth-of-type(1) { width: 10%; background: white; }`{=html}
-
-`.styledtable col:nth-of-type(2) { width: 30%; background: white; }`{=html}
-
-`.styledtable col:nth-of-type(3) { width: 60%; background: white; }`{=html}
-
-`</style>`{=html}
 
 # Introduction
 
@@ -42,15 +29,16 @@ chaînes de caractères. La seconde section, nommée **code**, stocke le
 code machine. Le header arbore la structure suivante (toutes les tailles
 sont en octets) :
 
-  Taille en octets   Description
-  ------------------ ----------------------------
-  8 octets           Magic Number (ARCHY0.0)
-  8 octets           Taille du header
-  8 octets           Adresse de la section data
-  8 octets           Taille de la section data
-  8 octets           Adresse de la section code
-  8 octets           Taille de la section code
-  8 octets           Taille totale du fichier
+| Taille en octets | Description                  |
+|------------------|------------------------------|
+| 8 octets         | Magic Number (ARCHY0.0)      |
+| 8 octets         | Taille du header             |
+| 8 octets         | Adresse de la section data   |
+| 8 octets         | Taille de la section data    |
+| 8 octets         | Adresse de la section code   |
+| 8 octets         | Taille de la section code    |
+| 8 octets         | Taille totale du fichier     |
+
 
 ## Types de données
 
@@ -79,9 +67,10 @@ sont en octets) :
 
 ### Système
 
-  Position du bit   7        6        5        4         3        2         1   0
-  ----------------- -------- -------- -------- --------- -------- --------- --- ------
-  Opération         \"==\"   \"!=\"   \"\>\"   \"\>=\"   \"\<\"   \"\<=\"   ?   ZERO
+| Position du bit   | 7        | 6        | 5        | 4         | 3        | 2         | 1    | 0    |
+|-------------------|----------|----------|----------|-----------|----------|-----------|------|------|
+| Opération         | "\"==\"" | "\"!=\"" | "\"\>\"" | "\"\>=\"" | "\"\<\"" | "\"\<=\"" |  ?   | ZERO |
+
 
 -   **CF**: Un drapeau de comparaison de 8 bits contenant retenant
     l\'état après une instruction de comparaison et utilisé pour les
@@ -97,9 +86,7 @@ dans les cas suivants :
     second
 -   le second opérande d\'une division ou d\'un modulo est nul
 
-```{=html}
-<!-- -->
-```
+
 -   **IP**: Un pointeur d\'instruction de 64 bits. Il pointe l\'adresse
     de l\'instruction en cours d\'exécution.
 
@@ -122,192 +109,190 @@ utilisés par l\'instruction.
 
 ### Memoire
 
-1.  [**Loads**]{.underline}
+1.  [**Loads**]
 
     Une instruction de chargement (\"load\") est formattée de la manière
     suivante : **opcode reg, (base, décalage \[, offset\])**. Le dernier
     offset est optionnel et doit être une valeur immédiate.
 
-    1.  **Scalaires**
+    1. **Scalaires**
 
-          Opcode   Opérandes                   Description
-          -------- --------------------------- ----------------------------------------------------------------------------------------------------------------------------------------
-          loadu    U2, (U0, U1 \[, OFFSET\])   Charge la valeur scalaire non-signée (ou 8 caractères ASCII) depuis la mémoire située en **U0 + U1 + OFFSET** dans le registre **U2**.
-          loads    S0, (U0, U1 \[, OFFSET\])   Charge la valeur scalaire signée depuis la mémoire située en **U0 + U1 + OFFSET** dans le registre **S0**.
-          loadf    F0, (U0, U1 \[, OFFSET\])   Charge la valeur scalaire flottante depuis la mémoire située en **U0 + U1 + OFFSET** dans le registre **F0**.
+   | Opcode | Opérandes                     | Description                                                                                                                   |
+   |--------|-------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+   | loadu  | U2, (U0, U1 \[, OFFSET\])    | Charge la valeur scalaire non-signée (ou 8 caractères ASCII) depuis la mémoire située en **U0 + U1 + OFFSET** dans le registre **U2**. |
+   | loads  | S0, (U0, U1 \[, OFFSET\])    | Charge la valeur scalaire signée depuis la mémoire située en **U0 + U1 + OFFSET** dans le registre **S0**.                   |
+   | loadf  | F0, (U0, U1 \[, OFFSET\])    | Charge la valeur scalaire flottante depuis la mémoire située en **U0 + U1 + OFFSET** dans le registre **F0**.               |
 
-    2.  **Vectoriels**
+2. **Vectoriels**
 
-          Opcode   Operands                    Description
-          -------- --------------------------- -------------------------------------------------------------------------------------------------------------------------------------------------------------------
-          loadv    V0, (U0, U1 \[, OFFSET\])   Charge un bloc de 8 valeurs scalaires non-signées consécutives (ou 64 caractères ASCII) depuis la mémoire située en **U0 + U1 + OFFSET** dans le registre **V0**.
-          loadt    T0, (U0, U1 \[, OFFSET\])   Charge un bloc de 8 valeurs scalaires signées consécutives depuis la mémoire située en **U0 + U1 + OFFSET** dans le registre **T0**.
-          loadg    G0, (U0, U1 \[, OFFSET\])   Charge un bloc de 8 valeurs flottantes signées consécutives depuis la mémoire située en **U0 + U1 + OFFSET** dans le registre **T0**.
+   | Opcode | Operands                     | Description                                                                                                                              |
+   |--------|------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
+   | loadv  | V0, (U0, U1 \[, OFFSET\])   | Charge un bloc de 8 valeurs scalaires non-signées consécutives (ou 64 caractères ASCII) depuis la mémoire située en **U0 + U1 + OFFSET** dans le registre **V0**. |
+   | loadt  | T0, (U0, U1 \[, OFFSET\])   | Charge un bloc de 8 valeurs scalaires signées consécutives depuis la mémoire située en **U0 + U1 + OFFSET** dans le registre **T0**.  |
+   | loadg  | G0, (U0, U1 \[, OFFSET\])   | Charge un bloc de 8 valeurs flottantes signées consécutives depuis la mémoire située en **U0 + U1 + OFFSET** dans le registre **T0**. |
 
-2.  [**Stores**]{.underline}
+
+2.  [**Stores**]
 
     Une instruction de stockage (\"store\") est formattée de la manière
     suivante : **opcode (base, décalage \[, offset\]), reg**. Le dernier
     offset est optionnel et doit être une valeur immédiate.
 
-    1.  **Scalar**
+    1. **Scalar**
 
-          Opcode   Opérandes                   Description
-          -------- --------------------------- -----------------------------------------------------------------------------------------------------------------------------------------------
-          storeu   (U0, U1 \[, OFFSET\]), U2   Stocke la valeur scalaire non-signée (ou 8 caractères ASCII) contenue dans le registre **U2** vers la mémoire située en **U0 + U1 + OFFSET**.
-          stores   (U0, U1 \[, OFFSET\]), S0   Stocke la valeur scalaire signée contenue dans le registre **S0** vers la mémoire située en **U0 + U1 + OFFSET**.
-          stores   (U0, U1 \[, OFFSET\]), F0   Stocke la valeur scalaire flottante contenue dans le registre **F0** vers la mémoire située en **U0 + U1 + OFFSET**.
+   | Opcode | Opérandes                     | Description                                                                                                                    |
+   |--------|-------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+   | storeu | (U0, U1 \[, OFFSET\]), U2    | Stocke la valeur scalaire non-signée (ou 8 caractères ASCII) contenue dans le registre **U2** vers la mémoire située en **U0 + U1 + OFFSET**. |
+   | stores | (U0, U1 \[, OFFSET\]), S0    | Stocke la valeur scalaire signée contenue dans le registre **S0** vers la mémoire située en **U0 + U1 + OFFSET**.              |
+   | stores | (U0, U1 \[, OFFSET\]), F0    | Stocke la valeur scalaire flottante contenue dans le registre **F0** vers la mémoire située en **U0 + U1 + OFFSET**.          |
 
-    2.  **Vector**
+2. **Vector**
 
-          Opcode   Opérandes                   Description
-          -------- --------------------------- ----------------------------------------------------------------------------------------------
-          storev   (U0, U1 \[, OFFSET\]), V0   Stocke le contenu du registre **V0** dans un block de mémoire situé en **U0 + U1 + OFFSET**.
-          storet   (U0, U1 \[, OFFSET\]), T0   Stocke le contenu du registre **T0** dans un block de mémoire situé en **U0 + U1 + OFFSET**.
-          storeg   (U0, U1 \[, OFFSET\]), G0   Stocke le contenu du registre **G0** dans un block de mémoire situé en **U0 + U1 + OFFSET**.
+   | Opcode | Opérandes                     | Description                                                                                                         |
+   |--------|-------------------------------|---------------------------------------------------------------------------------------------------------------------|
+   | storev | (U0, U1 \[, OFFSET\]), V0    | Stocke le contenu du registre **V0** dans un block de mémoire situé en **U0 + U1 + OFFSET**.                       |
+   | storet | (U0, U1 \[, OFFSET\]), T0    | Stocke le contenu du registre **T0** dans un block de mémoire situé en **U0 + U1 + OFFSET**.                       |
+   | storeg | (U0, U1 \[, OFFSET\]), G0    | Stocke le contenu du registre **G0** dans un block de mémoire situé en **U0 + U1 + OFFSET**.                       |
+
 
 ### Déplacement de données et conversion de types
 
-1.  [**Data movement**]{.underline}
+1.  [**Data movement**]
 
-      Opcode   Opérandes          Description
-      -------- ------------------ ----------------------------------------------------------------------
-      mov      ?, ?               Déplace les bits d\'un registre à un autre (peu importe leurs types)
-      movu     U0, U1             U0 = U1
-      movs     S0, S1             S0 = S1
-      movf     F0, F1             F0 = F1
-      movv     V0, V1             V0 = V1
-      movt     T0, T1             T0 = T1
-      movg     G0, G1             G0 = G1
-      movui    U0, IMM.           U0 = IMM.
-      movsi    S0, IMM.           S0 = IMM.
-      movfi    F0, IMM.           F0 = IMM.
-      movvi    V0, { 8 x IMM. }   V0 = { IMM1., IMM2., IMM3, ... }
-      movti    T0, { 8 x IMM. }   T0 = { IMM1., IMM2., IMM3, ... }
-      movgi    G0, { 8 x IMM. }   G0 = { IMM1., IMM2., IMM3, ... }
+      | Opcode | Opérandes          | Description                                                                                |
+|--------|--------------------|--------------------------------------------------------------------------------------------|
+| mov    | ?, ?               | Déplace les bits d'un registre à un autre (peu importe leurs types)                       |
+| movu   | U0, U1             | U0 = U1                                                                                    |
+| movs   | S0, S1             | S0 = S1                                                                                    |
+| movf   | F0, F1             | F0 = F1                                                                                    |
+| movv   | V0, V1             | V0 = V1                                                                                    |
+| movt   | T0, T1             | T0 = T1                                                                                    |
+| movg   | G0, G1             | G0 = G1                                                                                    |
+| movui  | U0, IMM.           | U0 = IMM.                                                                                  |
+| movsi  | S0, IMM.           | S0 = IMM.                                                                                  |
+| movfi  | F0, IMM.           | F0 = IMM.                                                                                  |
+| movvi  | V0, { 8 x IMM. }   | V0 = { IMM1., IMM2., IMM3, ... }                                                           |
+| movti  | T0, { 8 x IMM. }   | T0 = { IMM1., IMM2., IMM3, ... }                                                           |
+| movgi  | G0, { 8 x IMM. }   | G0 = { IMM1., IMM2., IMM3, ... }                                                           |
 
-2.  [**Type conversion**]{.underline}
 
-      Opcode   Opérandes   Description
-      -------- ----------- ------------------------------------------------
-      cvtus    S0, U0      Convertit un entier non signé en entier signé.
-      cvtsu    U0, S0      Convertit un entier signé en entier non signé.
-      cvtuf    F0, U0      Convertit un entier non signé en flottant.
-      cvtfu    U0, F0      Convertit un flottant en entier non signé.
-      cvtsf    F0, S0      Convertit un entier signé en flottant.
-      cvtfs    S0, F0      Convertit un flottant en entier signé.
+2.  [**Type conversion**]
+
+| Opcode | Opérandes | Description                                      |
+|--------|-----------|--------------------------------------------------|
+| cvtus  | S0, U0    | Convertit un entier non signé en entier signé.  |
+| cvtsu  | U0, S0    | Convertit un entier signé en entier non signé.  |
+| cvtuf  | F0, U0    | Convertit un entier non signé en flottant.      |
+| cvtfu  | U0, F0    | Convertit un flottant en entier non signé.      |
+| cvtsf  | F0, S0    | Convertit un entier signé en flottant.          |
+| cvtfs  | S0, F0    | Convertit un flottant en entier signé.          |
 
 ### Arithmétique et logique pour les entiers non signés
 
-  Opcode    Opérandes    Description
-  --------- ------------ ---------------------------------------------
-  addu      U0, U1, U2   U0 = U1 + U2
-  subu      U0, U1, U2   U0 = U1 - U2
-  mulu      U0, U1, U2   U0 = U1 \* U2
-  divu      U0, U1, U2   U0 = U1 / U2
-  modu      U0, U1, U2   U0 = U1 % U2
-  fmau      U0, U1, U2   U0 = U0 + U1 \* U2
-  sqrtu     U0, U1       U0 = sqrtu(U1)
-  logu      U0, U1       U0 = logu(U1)
-  incu      U0           U0 = U0 + 1
-  decu      U0           U0 = U0 - 1
-  andu      U0, U1, U2   U0 = U1 et U2
-  oru       U0, U1, U2   U0 = U1 ou U2
-  xoru      U0, U1, U2   U0 = U1 xor U2
-  shlu      U0, U1, U2   U0 = U1 \<\< U2
-  shru      U0, U1, U2   U0 = U1 \>\> U2
-  rolu      U0, U1, U2   U0 = U1 `<< U2       |
-                             | roru    | U0, U1, U2 | U0 = U1 >>` U2
-  popcntu   U0, U1       U0 = popcount(U1)
-  lmbu      U0, U1       U0 = leftmostbit(U1)
+| Opcode | Opérandes  | Description                   |
+|--------|------------|-------------------------------|
+| addu   | U0, U1, U2 | U0 = U1 + U2                  |
+| subu   | U0, U1, U2 | U0 = U1 - U2                  |
+| mulu   | U0, U1, U2 | U0 = U1 * U2                  |
+| divu   | U0, U1, U2 | U0 = U1 / U2                  |
+| modu   | U0, U1, U2 | U0 = U1 % U2                  |
+| fmau   | U0, U1, U2 | U0 = U0 + U1 * U2             |
+| sqrtu  | U0, U1     | U0 = sqrtu(U1)                |
+| logu   | U0, U1     | U0 = logu(U1)                 |
+| incu   | U0         | U0 = U0 + 1                   |
+| decu   | U0         | U0 = U0 - 1                   |
+| andu   | U0, U1, U2 | U0 = U1 et U2                 |
+| oru    | U0, U1, U2 | U0 = U1 ou U2                 |
+| xoru   | U0, U1, U2 | U0 = U1 xor U2                |
+| shlu   | U0, U1, U2 | U0 = U1 << U2                 |
+| shru   | U0, U1, U2 | U0 = U1 >> U2                 |
+| rolu   | U0, U1, U2 | U0 = U1 << U2 \| U1 >> U2     |
+| popcntu| U0, U1     | U0 = popcount(U1)             |
+| lmbu   | U0, U1     | U0 = leftmostbit(U1)         |
 
 ### Arithmétique et logique pour les entiers signés
 
-  Opcode    Opérandes    Description
-  --------- ------------ ---------------------------------------------
-  adds      S0, S1, S2   S0 = S1 + S2
-  subs      S0, S1, S2   S0 = S1 - S2
-  muls      S0, S1, S2   S0 = S1 \* S2
-  divs      S0, S1, S2   S0 = S1 / S2
-  mods      S0, S1, S2   S0 = S1 % S2
-  fmas      S0, S1, S2   S0 = S0 + S1 \* S2
-  sqrts     S0, S1       S0 = sqrts(S1)
-  logs      S0, S1       S0 = logs(S1)
-  ands      S0, S1, S2   S0 = S1 et S2
-  ors       S0, S1, S2   S0 = S1 ou S2
-  xors      S0, S1, S2   S0 = S1 xor S2
-  shls      S0, S1, S2   S0 = S1 \<\< S2
-  shrs      S0, S1, S2   S0 = S1 \>\> S2
-  rols      S0, S1, S2   S0 = S1 `>> S2       |
-                             | rors    | S0, S1, S2 | S0 = S1 <<` S2
-  popcnts   S0, S1       S0 = popcount(S1)
-  lmbs      S0, S1       S0 = leftmostbit(S1)
+| Opcode | Opérandes  | Description                   |
+|--------|------------|-------------------------------|
+| adds   | S0, S1, S2 | S0 = S1 + S2                  |
+| subs   | S0, S1, S2 | S0 = S1 - S2                  |
+| muls   | S0, S1, S2 | S0 = S1 * S2                  |
+| divs   | S0, S1, S2 | S0 = S1 / S2                  |
+| mods   | S0, S1, S2 | S0 = S1 % S2                  |
+| fmas   | S0, S1, S2 | S0 = S0 + S1 * S2             |
+| sqrts  | S0, S1     | S0 = sqrts(S1)                |
+| logs   | S0, S1     | S0 = logs(S1)                 |
+| ands   | S0, S1, S2 | S0 = S1 et S2                 |
+| ors    | S0, S1, S2 | S0 = S1 ou S2                 |
+| xors   | S0, S1, S2 | S0 = S1 xor S2                |
+| shls   | S0, S1, S2 | S0 = S1 << S2                 |
+| shrs   | S0, S1, S2 | S0 = S1 >> S2                 |
+| rols   | S0, S1, S2 | S0 = S1 >> S2 \| S1 << S2     |
+| popcnts| S0, S1     | S0 = popcount(S1)             |
+| lmbs   | S0, S1     | S0 = leftmostbit(S1)         |
 
 ### Arithmétique pour les nombres à virgule flottante
 
-  Opcode   Opérandes    Description
-  -------- ------------ --------------------
-  addf     F0, F1, F2   F0 = F1 + F2
-  subf     F0, F1, F2   F0 = F1 - F2
-  mulf     F0, F1, F2   F0 = F1 \* F2
-  divf     F0, F1, F2   F0 = F1 / F2
-  fmaf     F0, F1, F2   F0 = F0 + F1 \* F2
-  sqrtf    F0, F1       F0 = sqrtf(F1)
-  logf     F0, F1       F0 = logf(F1)
+| Opcode | Opérandes  | Description                   |
+|--------|------------|-------------------------------|
+| addf   | F0, F1, F2 | F0 = F1 + F2                  |
+| subf   | F0, F1, F2 | F0 = F1 - F2                  |
+| mulf   | F0, F1, F2 | F0 = F1 * F2                  |
+| divf   | F0, F1, F2 | F0 = F1 / F2                  |
+| fmaf   | F0, F1, F2 | F0 = F0 + F1 * F2             |
+| sqrtf  | F0, F1     | F0 = sqrtf(F1)                |
+| logf   | F0, F1     | F0 = logf(F1)                 |
 
 ### Comparaison et contrôle de flux
 
-1.  [**Comparaison**]{.underline}
+[**Comparaison**]
 
-      Opcode   Opérandes   Description
-      -------- ----------- -----------------------------------------------------------------
-      cmpu     U0, U1      Met à jour les bits du drapeau **CF** comme indiqué ci-dessous.
-      cmps     S0, S1      Met à jour les bits du drapeau **CF** comme indiqué ci-dessous.
-      cmpf     F0, F1      Met à jour les bits du drapeau **CF** comme indiqué ci-dessous.
+| Opcode | Opérandes | Description                                             |
+|--------|-----------|---------------------------------------------------------|
+| cmpu   | U0, U1    | Met à jour les bits du drapeau **CF** comme indiqué ci-dessous. |
+| cmps   | S0, S1    | Met à jour les bits du drapeau **CF** comme indiqué ci-dessous. |
+| cmpf   | F0, F1    | Met à jour les bits du drapeau **CF** comme indiqué ci-dessous. |
 
-    L\'instruction de comparaison met à jour le drapeau **CF** de la
-    manière suivante :
+L'instruction de comparaison met à jour le drapeau **CF** de la manière suivante :
 
-    ``` example
+CF[7] = (U0 == U1) ? 1 : 0
+CF[6] = (U0 != U1) ? 1 : 0
+CF[5] = (U0 > U1) ? 1 : 0
+CF[4] = (U0 >= U1) ? 1 : 0
+CF[3] = (U0 < U1) ? 1 : 0
+CF[2] = (U0 <= U1) ? 1 : 0
 
-    CF[7] = (U0 == U1) ? 1 : 0
-    CF[6] = (U0 != U1) ? 1 : 0
-    CF[5] = (U0 >  U1) ? 1 : 0
-    CF[4] = (U0 >= U1) ? 1 : 0
-    CF[3] = (U0 <  U1) ? 1 : 0
-    CF[2] = (U0 <= U1) ? 1 : 0
 
-    ```
+[**Contrôle de flux**]
 
-2.  [**Contrôle de flux**]{.underline}
-
-      Opcode   Opérandes   Description
-      -------- ----------- ------------------------------------------------------------------
-      je       ADRESSE     Saute vers ADRESSE si le 7ème bit du drapeau **CF** est à 1.
-      jne      ADRESSE     Saute vers ADRESSE si le 6ème bit du drapeau **CF** est à 1.
-      jg       ADRESSE     Saute vers ADRESSE si le 5ème bit du drapeau **CF** est à 1.
-      jge      ADRESSE     Saute vers ADRESSE si le 4ème bit du drapeau **CF** est à 1.
-      jl       ADRESSE     Saute vers ADRESSE si le 3ème bit du drapeau **CF** est à 1.
-      jle      ADRESSE     Saute vers ADRESSE si le 2ème bit du drapeau **CF** est à 1.
-      jz       ADRESSE     Saute vers ADRESSE si le bit 0 du drapeau **CF** est à 1.
-      jnz      ADRESSE     Saute vers ADRESSE si le bit 0 du drapeau **CF** n\'est pas à 1.
+| Opcode | Opérandes | Description                                         |
+|--------|-----------|-----------------------------------------------------|
+| je     | ADRESSE   | Saute vers ADRESSE si le 7ème bit du drapeau **CF** est à 1. |
+| jne    | ADRESSE   | Saute vers ADRESSE si le 6ème bit du drapeau **CF** est à 1. |
+| jg     | ADRESSE   | Saute vers ADRESSE si le 5ème bit du drapeau **CF** est à 1. |
+| jge    | ADRESSE   | Saute vers ADRESSE si le 4ème bit du drapeau **CF** est à 1. |
+| jl     | ADRESSE   | Saute vers ADRESSE si le 3ème bit du drapeau **CF** est à 1. |
+| jle    | ADRESSE   | Saute vers ADRESSE si le 2ème bit du drapeau **CF** est à 1. |
+| jz     | ADRESSE   | Saute vers ADRESSE si le bit 0 du drapeau **CF** est à 1.  |
+| jnz    | ADRESSE   | Saute vers ADRESSE si le bit 0 du drapeau **CF** n'est pas à 1. |
 
 ### Entrée/Sortie
 
-  Opcode   Opérandes   Description
-  -------- ----------- ------------------------------------------------------------------------------------------------------------------------
-  outu     U0          Affiche l\'entier non signé contenu dans **U0**.
-  outs     S0          Affiche l\'entier signé contenu dans **S0**.
-  outf     F0          Affiche le flottant contenu dans **F0**.
-  outa     U0          Affiche le caractère ASCII stocké dans les 8 bits de poids faible de **U0**
-  outb     U0          Affiche un flux de caractères ASCII à partir de l\'adresse mémoire stockée dans **U0**. S\'arrête en rencontrant un 0.
-  outx     U0          Affiche le contenu de **U0** en hexadécimal.
+| Opcode | Opérandes | Description                                                   |
+|--------|-----------|---------------------------------------------------------------|
+| outu   | U0        | Affiche l'entier non signé contenu dans **U0**.              |
+| outs   | S0        | Affiche l'entier signé contenu dans **S0**.                  |
+| outf   | F0        | Affiche le flottant contenu dans **F0**.                     |
+| outa   | U0        | Affiche le caractère ASCII stocké dans les 8 bits de poids faible de **U0**. |
+| outb   | U0        | Affiche un flux de caractères ASCII à partir de l'adresse mémoire stockée dans **U0**. S'arrête en rencontrant un 0. |
+| outx   | U0        | Affiche le contenu de **U0** en hexadécimal.                 |
 
 ### Fin du programme
 
-  Opcode   Opérandes   Description
-  -------- ----------- -----------------------------------
-  hlt      NONE        Termine l\'exécution du programme
+| Opcode | Opérandes | Description                               |
+|--------|-----------|-------------------------------------------|
+| hlt    | NONE      | Termine l'exécution du programme.         |
+
 
 ## Assembleur
 
@@ -408,33 +393,42 @@ Un fichier assembleur est constitué de deux sections : la section
 
 ## Header parallèle
 
-On rajoute une section, nommée **threads**, qui contient les adresses
-des sections parallèles ainsi que les coeurs qui y sont attribués.
+## Header
 
-  Taille en octets   Description
-  ------------------ -------------------------------
-  8 octets           Magic Number (ARCHY0.0)
-  8 octets           Taille du header
-  8 octets           Adresse de la section data
-  8 octets           Taille de la section data
-  8 octets           Adresse de la section code
-  8 octets           Taille de la section code
-  8 octets           Adresse de la section threads
-  8 octets           Taille de la section threads
-  8 octets           Nombre de cœurs requis
-  8 octets           Taille totale du fichier
+| Taille en octets | Description                  |
+|------------------|------------------------------|
+| 8 octets         | Magic Number (ARCHY0.0)      |
+| 8 octets         | Taille du header             |
+| 8 octets         | Adresse de la section data   |
+| 8 octets         | Taille de la section data    |
+| 8 octets         | Adresse de la section code   |
+| 8 octets         | Taille de la section code    |
+| 8 octets         | Adresse de la section threads|
+| 8 octets         | Taille de la section threads |
+| 8 octets         | Nombre de cœurs requis       |
+| 8 octets         | Taille totale du fichier     |
+
+## Threads Section
+
+Cette section contient les adresses des sections parallèles ainsi que les cœurs qui y sont attribués.
+
+| Taille en octets | Description                  |
+|------------------|------------------------------|
+| 8 octets         | Adresse de la section parallèle |
+| 8 octets         | Nombre de cœurs attribués à cette section |
 
 ## Instructions liées au parallélisme
 
-  Opcode          Opérandes   Description
-  --------------- ----------- -----------------------------------------------------------------------------------------------
-  parallel~on~    MASK        Déclare le début d\'une zone parallèle, qui utilisera au plus les cœurs indiqués par MASK.
-  parallel~off~   NONE        Déclare la fin d\'une zone parallèle.
-  thread~on~      MASK        Déclare le début d\'une section parallèle, qui sera exécutée par les cœurs indiqués par MASK.
-  thread~off~     NONE        Déclare la fin d\'une section parallèle.
-  lock~on~        U0          Tente de prendre le mutex numéro **U0** (reste bloqué jusqu\'à obtention du mutex).
-  lock~off~       U0          Relâche le mutex numéro **U0**.
-  get~core~       U0          Récupère le numéro du cœur et le stocke dans **U0**.
+| Opcode          | Opérandes   | Description                                                                                       |
+|-----------------|-------------|---------------------------------------------------------------------------------------------------|
+| parallel~on~    | MASK        | Déclare le début d'une zone parallèle, qui utilisera au plus les cœurs indiqués par MASK.       |
+| parallel~off~   | NONE        | Déclare la fin d'une zone parallèle.                                                             |
+| thread~on~      | MASK        | Déclare le début d'une section parallèle, qui sera exécutée par les cœurs indiqués par MASK.    |
+| thread~off~     | NONE        | Déclare la fin d'une section parallèle.                                                          |
+| lock~on~        | U0          | Tente de prendre le mutex numéro **U0** (reste bloqué jusqu'à obtention du mutex).               |
+| lock~off~       | U0          | Relâche le mutex numéro **U0**.                                                                  |
+| get~core~       | U0          | Récupère le numéro du cœur et le stocke dans **U0**.                                             |
+
 
 ## Exemple
 
