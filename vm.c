@@ -83,7 +83,7 @@ void loadu(core_t *core)
                 instruction.register_2, core->U[instruction.register_2],
                 instruction.register_3, core->U[instruction.register_3],
                 *(u64 *)&(core->memory[core->U[instruction.register_2] + core->U[instruction.register_3] + instruction.offset]));
-    core->U[instruction.register_1] = *(u64 *)&(core->memory[instruction.register_2 + instruction.register_3 + instruction.offset]);
+    core->U[instruction.register_1] = *(u64 *)&(core->memory[core->U[instruction.register_2] + core->U[instruction.register_3] + instruction.offset]);
     DEBUG_PRINT("--------Après LOADU--------\n");
     DEBUG_PRINT("Le registre %d a pour valeur %ld\n"
                 "Le registre %d a pour valeur %ld\n"
@@ -419,6 +419,7 @@ void read_config(char *config_file_name, char **file_buffer_list, u16 *number_of
         char *endptr;
         errno = 0;
         number_of_thread = strtol(config_file_line, &endptr, 0);
+        // Là faut gérer mieux strtol
         if (number_of_thread == 0)
         {
             error("The configuration file start with %ld thread, it need to be the following format : <int> <path1> <path2> ...\n", number_of_thread);
@@ -467,4 +468,36 @@ void read_config(char *config_file_name, char **file_buffer_list, u16 *number_of
     // Fermer le config_file
     fclose(config_file);
     *number_of_file = i;
+}
+
+void excute_program()
+{
+    return;
+}
+
+int main(int argc, char *argv[])
+{
+    if (argc != 2)
+    {
+        fprintf(stderr, "Error: Incorrect number of arguments\n");
+        fprintf(stderr, "Usage: %s <config>\n", argv[0]);
+        return 1;
+    }
+
+    u16 n;
+    char *file_buffer_list[MAX_FILE_BUFFER_SIZE];
+
+    read_config(argv[1], file_buffer_list, &n);
+    set_up_instruction_set();
+
+    for (u16 i = 0; i < n; i++)
+    {
+        core_t *core = core_new(file_buffer_list[i], i);
+
+        core_execute(core);
+
+        core_drop(core);
+    }
+
+    return 0;
 }
