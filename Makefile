@@ -1,18 +1,21 @@
 all: run_par
 
 run_par: mkdir_bin
-	gcc vm.c -o bin/vm -Wall -Wconversion -Wextra -lm
-	# ./bin/vm script.conf
+	#gcc vm.c -o bin/vm -Wall -Wconversion -Wextra -lm
+	gcc main.c vm.c -o bin/vm -Wall -Wconversion -Wextra -lm
+	./bin/vm script.conf
 
 run: mkdir_bin
-	gcc vm.c -o bin/vm -Wall -Wconversion -Wextra
+	#gcc vm.c -o bin/vm -Wall -Wconversion -Wextra
+	gcc main.c vm.c -o bin/vm -Wall -Wconversion -Wextra -lm
 	./bin/vm reference/hello_world.archyb
 	./bin/vm reference/fibonacci.archyb
 	# ./bin/vm reference/dotprod_u64.archyb
 
 
 vm_debug: mkdir_bin
-	gcc vm.c -o bin/vm -DDEBUG -Wall -Wconversion -Wextra
+	# gcc vm.c -o bin/vm -DDEBUG -Wall -Wconversion -Wextra
+	gcc main.c vm.c -o bin/vm -DDEBUG -Wall -Wconversion -Wextra
 	./bin/vm script.conf
 	# ./bin/vm reference/hello_world.archyb
 	# ./bin/vm reference/fibonacci.archyb
@@ -31,7 +34,8 @@ mkdir_bin:
 	mkdir -p bin
 
 bench: bench.c
-	gcc bench.c -o bin/bench
+	gcc bench.c vm.c -o bin/bench -lm -g
+	./bin/bench
 
 .PHONY: clean check
 
