@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <libgen.h>
+#include <errno.h>
 
 #include <math.h>
 #include <time.h>
@@ -73,7 +74,7 @@ instruction_t instruction_new(u32 instruction)
 {
     instruction = htobe32(instruction);
     return (instruction_t){
-        .opcode = instruction >> (SIZE_INSTRUCTION - 8) & 0xFF,
+        .opcode = (u8)(instruction >> (SIZE_INSTRUCTION - 8) & 0xFF),
         .offset = instruction >> (SIZE_INSTRUCTION - 17) & 0x1FF,
         .register_1 = instruction >> (SIZE_INSTRUCTION - 22) & 0x1F,
         .register_2 = instruction >> (SIZE_INSTRUCTION - 27) & 0x1F,
@@ -114,10 +115,10 @@ typedef struct core_s
     u64 IP;
 
     u8 *memory;
-    u8 *file_buffer;
+    char *file_buffer;
     header_t header;
     // FILE *fd;
-    u8 id;
+    u16 id;
     u8 type; // coretype, 0 = compute, 1 = management
     // mutex
     // pthread_mutex_t mutex_tab[MAX_MUTEX_PER_CORE];
@@ -126,7 +127,7 @@ typedef struct core_s
     // void (*insn_exec)(...);
 } core_t;
 
-core_t *core_new(char *buffer, u8 id)
+core_t *core_new(char *buffer, u16 id)
 {
     core_t *core = (core_t *)malloc(sizeof(core_t)); // Allocate memory for the core
     if (core == NULL)
@@ -204,21 +205,27 @@ void storeu(core_t *core)
     DEBUG_PRINT("Le registre %d a pour valeur %ld\n"
                 "Le registre %d a pour valeur %ld\n"
                 "Le registre %d a pour valeur %ld\n"
+                "offset a pour valeur %d\n"
                 "core->memory[**address**] a pour valeur %ld\n",
                 instruction.register_1, core->U[instruction.register_1],
                 instruction.register_2, core->U[instruction.register_2],
                 instruction.register_3, core->U[instruction.register_3],
-                *(u64 *)&(core->memory[core->U[instruction.register_2] + core->U[instruction.register_3] + instruction.offset]));
-    core->memory[core->U[instruction.register_2] + core->U[instruction.register_3] + instruction.offset] = core->U[instruction.register_1];
+                instruction.offset,
+                *(u64 *)&(core->memory[core->U[instruction.register_1] + core->U[instruction.register_2] + instruction.offset]));
+
+    memcpy(&core->memory[core->U[instruction.register_1] + core->U[instruction.register_2] + instruction.offset], &core->U[instruction.register_3], 64);
+
     DEBUG_PRINT("--------Après STOREU--------\n");
     DEBUG_PRINT("Le registre %d a pour valeur %ld\n"
                 "Le registre %d a pour valeur %ld\n"
                 "Le registre %d a pour valeur %ld\n"
+                "offset a pour valeur %d\n"
                 "core->memory[**address**] a pour valeur %ld\n\n",
                 instruction.register_1, core->U[instruction.register_1],
                 instruction.register_2, core->U[instruction.register_2],
                 instruction.register_3, core->U[instruction.register_3],
-                *(u64 *)&(core->memory[core->U[instruction.register_2] + core->U[instruction.register_3] + instruction.offset]));
+                instruction.offset,
+                *(u64 *)&(core->memory[core->U[instruction.register_1] + core->U[instruction.register_2] + instruction.offset]));
     core->IP += SIZE_INSTRUCTION_IN_BYTE;
 }
 
@@ -244,9 +251,15 @@ void movu(core_t *core)
 void movui(core_t *core)
 {
     instruction_t instruction = instruction_new(*(u32 *)&(core->file_buffer[core->IP]));
+    DEBUG_PRINT("--------Avant MOVUI--------\n");
+    DEBUG_PRINT("Le registre %d a pour valeur %ld\n", instruction.register_1,
+                core->U[instruction.register_1]);
     core->IP += SIZE_INSTRUCTION_IN_BYTE;
     u64 immediate = get_immediate(core);
     core->U[instruction.register_1] = immediate;
+    DEBUG_PRINT("--------Après MOVUI--------\n");
+    DEBUG_PRINT("Le registre %d a pour valeur %ld\n\n", instruction.register_1,
+                core->U[instruction.register_1]);
 }
 
 void addu(core_t *core)
@@ -356,10 +369,13 @@ void cmpu(core_t *core)
 
 void jl(core_t *core)
 {
-    instruction_t instruction = instruction_new(*(u32 *)&(core->file_buffer[core->IP]));
     core->IP += SIZE_INSTRUCTION_IN_BYTE;
     u64 immediate = get_immediate(core);
+    DEBUG_PRINT("--------Avant JL--------\n");
+    DEBUG_PRINT("Instruction Pointer a pour valeur %ld\n", core->IP);
     core->IP = core->CF[3] ? immediate : core->IP;
+    DEBUG_PRINT("--------Après JL--------\n");
+    DEBUG_PRINT("Instruction Pointer a pour valeur %ld\n\n", core->IP);
 }
 
 void outu(core_t *core)
@@ -380,7 +396,7 @@ void outb(core_t *core)
     {
         printf("%c", address_value);
         i++;
-        address_value = *(u8 *)&(core->file_buffer[address + i]);
+        address_value = *(u8 *)&(core->file_buffer[address + (u64)i]);
     }
     core->IP += SIZE_INSTRUCTION_IN_BYTE;
 }
@@ -599,7 +615,7 @@ void read_config(char *config_file_name, char **file_buffer_list, u16 *number_of
     char config_file_line[256];
     char full_path[256];
     u16 i = 0;
-    u16 number_of_thread = 0;
+    i64 number_of_thread = 0;
 
     config_file = fopen(config_file_name, "r");
 
@@ -611,10 +627,12 @@ void read_config(char *config_file_name, char **file_buffer_list, u16 *number_of
 
     if (fscanf(config_file, "%255[^\n]\n", config_file_line) != EOF)
     {
-        number_of_thread = atoi(config_file_line);
+        char *endptr;
+        errno = 0;
+        number_of_thread = strtol(config_file_line, &endptr, 0);
         if (number_of_thread == 0)
         {
-            error("The configuration file start with %d thread, it need to be the following format : <int> <path1> <path2> ...\n", number_of_thread);
+            error("The configuration file start with %ld thread, it need to be the following format : <int> <path1> <path2> ...\n", number_of_thread);
             fclose(config_file);
             exit(EXIT_FAILURE);
         }
@@ -638,7 +656,7 @@ void read_config(char *config_file_name, char **file_buffer_list, u16 *number_of
         FILE *file = fopen(config_file_line, "rb");
         uint64_t total_size = (uint64_t)st.st_size;
 
-        u8 *buffer = (u8 *)malloc(total_size);
+        char *buffer = malloc(total_size);
         if (buffer == NULL)
         {
             error("File not found or error accessing file %s.\n", config_file_line);
