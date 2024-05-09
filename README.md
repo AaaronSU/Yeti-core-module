@@ -23,11 +23,7 @@ réalisation du projet. Auteur original : yaspr.
 
 ## Format binaire
 
-Nos fichiers binaires sont séparés en trois sections. la première
-section, nommée **data**, stocke les valeurs constantes telles que les
-chaînes de caractères. La seconde section, nommée **code**, stocke le
-code machine. Le header arbore la structure suivante (toutes les tailles
-sont en octets) :
+Les fichiers binaires que nous utilisons sont divisés en trois parties distinctes. Tout d'abord, il y a le header, qui constitue la première section et présente la structure suivante. Ensuite, il y a la section appelée "data", où sont stockées les valeurs constantes comme les chaînes de caractères. Enfin, la dernière section, appelée "code", contient le code machine.
 
 | Taille en octets | Description                  |
 |------------------|------------------------------|
