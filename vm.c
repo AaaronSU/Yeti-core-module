@@ -54,6 +54,7 @@ typedef uint16_t u16;
 typedef uint8_t u8;
 typedef int64_t i64;
 typedef double f64;
+char *file_buffer_list[MAX_FILE_BUFFER_SIZE];
 
 typedef struct instruction_s
 {
@@ -564,9 +565,13 @@ void read_config(char *config_file_name, char **file_buffer_list, u16 *number_of
     *number_of_file = i;
 }
 
-void excute_program()
+void excute_program(u16 indice)
 {
-    return;
+    core_t *core = core_new(file_buffer_list[indice], indice);
+
+    core_execute(core);
+
+    core_drop(core);
 }
 
 int main(int argc, char *argv[])
@@ -577,20 +582,14 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Usage: %s <config>\n", argv[0]);
         return 1;
     }
-
     u16 n;
-    char *file_buffer_list[MAX_FILE_BUFFER_SIZE];
 
     read_config(argv[1], file_buffer_list, &n);
     set_up_instruction_set();
 
     for (u16 i = 0; i < n; i++)
     {
-        core_t *core = core_new(file_buffer_list[i], i);
-
-        core_execute(core);
-
-        core_drop(core);
+        excute_program(i);
     }
 
     return 0;
