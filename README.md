@@ -159,7 +159,7 @@ utilisés par l\'instruction.
 
 1.  [**Data movement**]
 
-      | Opcode | Opérandes          | Description                                                                                |
+| Opcode | Opérandes          | Description                                                                                |
 |--------|--------------------|--------------------------------------------------------------------------------------------|
 | mov    | ?, ?               | Déplace les bits d'un registre à un autre (peu importe leurs types)                       |
 | movu   | U0, U1             | U0 = U1                                                                                    |
@@ -174,6 +174,7 @@ utilisés par l\'instruction.
 | movvi  | V0, { 8 x IMM. }   | V0 = { IMM1., IMM2., IMM3, ... }                                                           |
 | movti  | T0, { 8 x IMM. }   | T0 = { IMM1., IMM2., IMM3, ... }                                                           |
 | movgi  | G0, { 8 x IMM. }   | G0 = { IMM1., IMM2., IMM3, ... }                                                           |
+
 
 
 2.  [**Type conversion**]
@@ -255,12 +256,15 @@ utilisés par l\'instruction.
 
 L'instruction de comparaison met à jour le drapeau **CF** de la manière suivante :
 
-CF[7] = (U0 == U1) ? 1 : 0
-CF[6] = (U0 != U1) ? 1 : 0
-CF[5] = (U0 > U1) ? 1 : 0
-CF[4] = (U0 >= U1) ? 1 : 0
-CF[3] = (U0 < U1) ? 1 : 0
-CF[2] = (U0 <= U1) ? 1 : 0
+| Condition                                      |
+|-----------------------------------------------|
+| CF[7] = (U0 == U1) ? 1 : 0                    |
+| CF[6] = (U0 != U1) ? 1 : 0                    |
+| CF[5] = (U0 > U1) ? 1 : 0                     |
+| CF[4] = (U0 >= U1) ? 1 : 0                    |
+| CF[3] = (U0 < U1) ? 1 : 0                     |
+| CF[2] = (U0 <= U1) ? 1 : 0                    |
+
 
 
 [**Contrôle de flux**]
