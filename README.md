@@ -421,13 +421,13 @@ Cette section contient les adresses des sections parallèles ainsi que les cœur
 
 | Opcode          | Opérandes   | Description                                                                                       |
 |-----------------|-------------|---------------------------------------------------------------------------------------------------|
-| parallel~on~    | MASK        | Déclare le début d'une zone parallèle, qui utilisera au plus les cœurs indiqués par MASK.       |
-| parallel~off~   | NONE        | Déclare la fin d'une zone parallèle.                                                             |
-| thread~on~      | MASK        | Déclare le début d'une section parallèle, qui sera exécutée par les cœurs indiqués par MASK.    |
-| thread~off~     | NONE        | Déclare la fin d'une section parallèle.                                                          |
-| lock~on~        | U0          | Tente de prendre le mutex numéro **U0** (reste bloqué jusqu'à obtention du mutex).               |
-| lock~off~       | U0          | Relâche le mutex numéro **U0**.                                                                  |
-| get~core~       | U0          | Récupère le numéro du cœur et le stocke dans **U0**.                                             |
+| parallel_on    | MASK        | Déclare le début d'une zone parallèle, qui utilisera au plus les cœurs indiqués par MASK.       |
+| parallel_off   | NONE        | Déclare la fin d'une zone parallèle.                                                             |
+| thread_on      | MASK        | Déclare le début d'une section parallèle, qui sera exécutée par les cœurs indiqués par MASK.    |
+| thread_off     | NONE        | Déclare la fin d'une section parallèle.                                                          |
+| lock_on        | U0          | Tente de prendre le mutex numéro **U0** (reste bloqué jusqu'à obtention du mutex).               |
+| lock_off       | U0          | Relâche le mutex numéro **U0**.                                                                  |
+| get_core       | U0          | Récupère le numéro du cœur et le stocke dans **U0**.                                             |
 
 
 ## Exemple
