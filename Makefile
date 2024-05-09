@@ -44,5 +44,5 @@ clean:
 	rm -f bin/*
 
 check: test.c
-	gcc test.c -o bin/test -lcmocka -lm
-	./bin/test
+	gcc test.c -o bin/test -lcmocka -lm -g3
+	./bin/test 

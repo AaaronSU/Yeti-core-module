@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <cmocka.h>
 
+#include <limits.h>
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -16,6 +18,7 @@
 #define MAX_INTERATION 1000
 #define SIZE_FILE ((sizeof(u32) + sizeof(u64)) * MAX_INTERATION)
 
+//
 static core_t *core_init()
 {
     core_t *core = (core_t *)malloc(sizeof(core_t));
@@ -61,11 +64,79 @@ static core_t *core_init()
     return core;
 }
 
+//
 static u32 create_instruction(u8 opcode, u16 offset, u8 register_1, u8 register_2, u8 register_3)
 {
     return htobe32(opcode << (SIZE_INSTRUCTION - 8) | offset << (SIZE_INSTRUCTION - 17) | register_1 << (SIZE_INSTRUCTION - 22) | register_2 << (SIZE_INSTRUCTION - 27) | register_3);
 }
 
+//
+static void test_loadu(void **state)
+{
+    // U1 = Memory(u2 + u3 + offset)
+
+    core_t *core = core_init();
+    for (int i = 0; i < MAX_INTERATION; ++i)
+    {
+        // intialisation des registres
+        u8 r1 = rand() % 32;
+        u8 r2 = rand() % 32;
+        u8 r3 = rand() % 32;
+
+        core->U[r2] = (rand() % (MAX_MEMORY_SIZE / 3));
+        core->U[r3] = (rand() % (MAX_MEMORY_SIZE / 3));
+        u8 offset = rand() ;
+
+        u32 *ptr = (u32 *)(core->file_buffer + core->IP);
+        *ptr = create_instruction(0, offset, r1, r2, r3);
+
+        u64 value = rand();
+        u64 indice = core->U[r2] + core->U[r3] + offset;
+        printf("indice : %lu\n", indice);
+        *(u64 *)(core->memory + indice) = value;
+
+        loadu(core);
+
+        assert_int_equal(core->U[r1], value);
+    }
+
+    core_drop(core);
+}
+
+// instruction_set[13] = movu;
+static void test_storeu(void **state)
+{
+    core_t *core = core_init();
+
+    // Memory(u1 + u2 + offset) = u3
+    for (int i = 0; i < MAX_INTERATION; ++i)
+    {
+        // intialisation des registres
+        u8 r1 = rand() % 32;
+        u8 r2 = rand() % 32;
+        u8 r3 = rand() % 32;
+
+        // indice 
+        core->U[r1] = (rand() % (MAX_MEMORY_SIZE / 3));
+        core->U[r2] = (rand() % (MAX_MEMORY_SIZE / 3));
+        u8 offset = rand();
+
+        // value
+        core->U[r3] = (rand() % (MAX_MEMORY_SIZE / 3));
+        u32 *ptr = (u32 *)(core->file_buffer + core->IP);
+        *ptr = create_instruction(0, offset, r1, r2, r3);
+
+        u64 indice = core->U[r1] + core->U[r2] + offset;
+
+        storeu(core);
+
+        assert_int_equal(core->U[r3], *(u64 *)(core->memory + indice));
+    }
+
+    core_drop(core);
+}
+
+//
 static void test_movu(void **state)
 {
     core_t *core = core_init();
@@ -101,6 +172,7 @@ static void test_movu(void **state)
     core_drop(core);
 }
 
+//
 static void test_movui(void **state)
 {
     core_t *core = core_init();
@@ -124,6 +196,7 @@ static void test_movui(void **state)
     core_drop(core);
 }
 
+//
 static void test_addu(void **state)
 {
     core_t *core = core_init();
@@ -162,6 +235,7 @@ static void test_addu(void **state)
     core_drop(core);
 }
 
+//
 static void test_incu(void **state)
 {
     core_t *core = core_init();
@@ -181,6 +255,7 @@ static void test_incu(void **state)
     core_drop(core);
 }
 
+//
 static void test_cmpu(void **state)
 {
     core_t *core = core_init();
@@ -188,7 +263,7 @@ static void test_cmpu(void **state)
     // U[r1] == U[r2]
     for (int i = 0; i < MAX_INTERATION; ++i)
     {
-        
+
         u8 r1 = rand() % 32;
         u8 r2 = rand() % 32;
 
@@ -213,7 +288,7 @@ static void test_cmpu(void **state)
 
     // U[r1] > U[r2]
     for (int i = 0; i < MAX_INTERATION; ++i)
-    { 
+    {
         u8 r1 = rand() % 32;
         u8 temp = rand() % 32;
         u8 r2 = (temp == r1) ? (r1 + 1) % 32 : temp;
@@ -239,15 +314,16 @@ static void test_cmpu(void **state)
         assert_false(core->CF[1]);
         assert_false(core->CF[0]);
     }
-    
+
     core_drop(core);
 }
 
+//
 static void test_jl(void **state)
 {
     core_t *core = core_init();
-    // dépassement ? 
-    // A GERER ==> DONNE PROBLEME MALLOC DEVRAIT GERER LE FAIT DE DEPASSER, MESSAGE DERREUR OU modulo?? 
+    // dépassement ?
+    // A GERER ==> DONNE PROBLEME MALLOC DEVRAIT GERER LE FAIT DE DEPASSER, MESSAGE DERREUR OU modulo??
 
     // Test sans dépassement
     for (int i = 0; i < MAX_INTERATION; ++i)
@@ -269,7 +345,8 @@ static void test_jl(void **state)
     core_drop(core);
 }
 
-static void test_outu(void** state)
+//
+static void test_outu(void **state)
 {
     /* core_t* core = core_init();
     u8 * chaine = "hello";
@@ -288,17 +365,20 @@ static void test_outu(void** state)
     core_drop(core); */
 }
 
+//
 int main(void)
 {
     int result = 0;
     const struct CMUnitTest tests[] = {
+        cmocka_unit_test(test_loadu),
+        cmocka_unit_test(test_storeu),
         cmocka_unit_test(test_movu),
         cmocka_unit_test(test_movui),
         cmocka_unit_test(test_addu),
         cmocka_unit_test(test_incu),
         cmocka_unit_test(test_cmpu),
         cmocka_unit_test(test_jl),
-        //cmocka_unit_test(test_outu),
+        // cmocka_unit_test(test_outu),
     };
     result |= cmocka_run_group_tests_name("vm", tests, NULL, NULL);
 

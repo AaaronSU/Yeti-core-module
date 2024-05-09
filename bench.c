@@ -33,12 +33,12 @@ static core_t *core_init()
         exit(1);
     }
 
-    /*
-    for (int i = 0; i < MAX_MEMORY_SIZE; ++i)
+    u64* ptr = (u64 *)memory;
+    for (int i = 0; i < MAX_MEMORY_SIZE / 8; ++i)
     {
-        *(memory + i) = (u8)i;
+        // attention, peut casser à tout moment
+        *(ptr + i) = (u64)(i % (MAX_MEMORY_SIZE / 4)); // pour les déplacements mémoires
     }
-    */
 
     core->memory = memory;
 
@@ -184,7 +184,6 @@ void mesure_performance_scalaire(void (*opcode)(core_t *), u64 r, const u8 *titl
            dev,
            (dev * 100.0 / mean),
            mbps);
-
 }
 
 //
