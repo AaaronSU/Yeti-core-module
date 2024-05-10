@@ -56,7 +56,7 @@ static core_t *core_init()
 //
 static u32 create_instruction(u8 opcode, u16 offset, u8 register_1, u8 register_2, u8 register_3)
 {
-    return htobe32(opcode << (SIZE_INSTRUCTION - 8) | offset << (SIZE_INSTRUCTION - 17) | register_1 << (SIZE_INSTRUCTION - 22) | register_2 << (SIZE_INSTRUCTION - 27) | register_3);
+    return htobe32(opcode << (SIZE_INSTRUCTION - 8 & 0xFF) | offset << (SIZE_INSTRUCTION - 17 & 0x1FF) | register_1 << (SIZE_INSTRUCTION - 22 & 0x1F) | register_2 << (SIZE_INSTRUCTION - 27 & 0x1F) | register_3 & 0x1F);
 }
 
 //
