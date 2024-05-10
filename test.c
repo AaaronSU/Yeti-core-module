@@ -3,7 +3,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <cmocka.h>
-
+#include <stdio.h>
 #include <limits.h>
 
 #include <stdlib.h>
@@ -13,7 +13,7 @@
 #include <fcntl.h>
 #include <sys/wait.h>
 
-#include "vm.c"
+#include "vm.h"
 
 #define MAX_INTERATION 1000
 
@@ -76,11 +76,11 @@ static void test_loadu(void **state)
         exit(1);
     }
     core->file_buffer = file_buffer;
-    
+
     for (int i = 0; i < MAX_INTERATION; ++i)
     {
         // intialisation des registres
-        u8 r1 = rand() % 10; // entre 0 et 9
+        u8 r1 = rand() % 10;        // entre 0 et 9
         u8 r2 = 10 + (rand() % 10); // entre 10 et 19
         u8 r3 = 20 + (rand() % 12); // entre 20 et 31
 
@@ -128,7 +128,7 @@ static void test_storeu(void **state)
         u8 r2 = rand() % 32;
         u8 r3 = rand() % 32;
 
-        // indice 
+        // indice
         core->U[r1] = (rand() % (MAX_MEMORY_SIZE / 3));
         core->U[r2] = (rand() % (MAX_MEMORY_SIZE / 3));
         u8 offset = rand();
@@ -337,7 +337,7 @@ static void test_mulu(void **state)
     core_drop(core);
 }
 
-// 
+//
 static void test_fmau(void **state)
 {
 
@@ -550,7 +550,6 @@ static void test_outu(void **state)
 
     core_drop(core); */
 }
-
 
 //
 int main(void)

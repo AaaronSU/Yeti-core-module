@@ -32,7 +32,7 @@ static core_t *core_init()
         exit(1);
     }
 
-    u64* ptr = (u64 *)memory;
+    u64 *ptr = (u64 *)memory;
     for (int i = 0; i < MAX_MEMORY_SIZE / 8; ++i)
     {
         // attention, peut casser à tout moment
@@ -149,7 +149,7 @@ void mesure_performance_scalaire(void (*opcode)(core_t *), u64 r, const u8 *titl
         core->U[r2] = 0;
         core->U[r3] = 0;
 
-        //printf("r1: %u\tr2: %u\tr3: %u\tu_r1: %lu\tu_r2: %lu\tu_r3: %lu\n", r1, r2, r3, core->U[r1], core->U[r2], core->U[r3]);
+        // printf("r1: %u\tr2: %u\tr3: %u\tu_r1: %lu\tu_r2: %lu\tu_r3: %lu\n", r1, r2, r3, core->U[r1], core->U[r2], core->U[r3]);
 
         clock_gettime(CLOCK_MONOTONIC_RAW, &t1);
         for (int j = 0; j < ITERATION; ++j)
@@ -172,8 +172,8 @@ void mesure_performance_scalaire(void (*opcode)(core_t *), u64 r, const u8 *titl
     f64 dev = stddev_f64(samples, r);
     f64 opns = (f64)(r * ITERATION) / mean;
     // f64 mbps = size_mib / (mean / 1e9);
-    //f64 size_b = 0;
-    //f64 mbps = 0;
+    // f64 size_b = 0;
+    // f64 mbps = 0;
 
     printf("%10s; %10lu; %15.3lf; %15.3lf; %15.3lf; %15.3lf (%6.3lf %%); %10.3lf;\n",
            title,
