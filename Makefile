@@ -1,18 +1,21 @@
 all: run_par
 
 run_par: mkdir_bin
-	gcc vm.c -o bin/vm -Wall -Wconversion -Wextra -g3
+	gcc vm.c main.c -o bin/vm -Wall -Wconversion -Wextra -g3
 	./bin/vm script.conf
 
 run: mkdir_bin
-	gcc vm.c -o bin/vm -Wall -Wconversion -Wextra
-	./bin/vm reference/hello_world.archyb
-	./bin/vm reference/fibonacci.archyb
-	./bin/vm reference/dotprod_u64.archyb
+	#gcc vm.c main.c -o bin/vm -Wall -Wconversion -Wextra
+	gcc main.c vm.c -o bin/vm -Wall -Wconversion -Wextra
+	./bin/vm script.conf
+	# ./bin/vm reference/hello_world.archyb
+	# ./bin/vm reference/fibonacci.archyb
+	# ./bin/vm reference/dotprod_u64.archyb
 
 
 vm_debug: mkdir_bin
-	gcc vm.c -o bin/vm -DDEBUG -Wall -Wconversion -Wextra
+	# gcc vm.c -o bin/vm -DDEBUG -Wall -Wconversion -Wextra
+	gcc main.c vm.c -o bin/vm -DDEBUG -Wall -Wconversion -Wextra
 	./bin/vm script.conf
 	# ./bin/vm reference/hello_world.archyb
 	# ./bin/vm reference/fibonacci.archyb
@@ -30,6 +33,15 @@ verify_as: mkdir_bin
 mkdir_bin:
 	mkdir -p bin
 
+bench: bench.c
+	gcc bench.c vm.c -o bin/bench -lm -g
+	./bin/bench 
+
+.PHONY: clean check
+
 clean:
-	rm bin/header_reader
-	rm bin/as
+	rm -f bin/*
+
+check: test.c
+	gcc test.c -o bin/test -lcmocka -lm -g3
+	./bin/test 
