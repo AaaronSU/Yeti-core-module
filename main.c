@@ -23,20 +23,20 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Usage: %s <config>\n", argv[0]);
         return 1;
     }
-
     u16 n;
-    char *file_buffer_list[MAX_FILE_BUFFER_SIZE];
-
     read_config(argv[1], file_buffer_list, &n);
+    program_thread_data_t *tds = malloc(sizeof(program_thread_data_t) * n);
     set_up_instruction_set();
 
     for (u16 i = 0; i < n; i++)
     {
-        core_t *core = core_new(file_buffer_list[i], i);
+        tds[i].index = i;
+        pthread_create(&tds[i].tid, NULL, execute_program_thread, &tds[i]);
+    }
 
-        core_execute(core);
-
-        core_drop(core);
+    for (u16 i = 0; i < n; i++)
+    {
+        pthread_join(tds[i].tid, NULL);
     }
 
     return 0;

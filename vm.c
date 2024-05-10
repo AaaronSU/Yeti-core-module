@@ -7,6 +7,7 @@
 #include <string.h>
 #include <libgen.h>
 #include <errno.h>
+#include <pthread.h>
 
 #include <math.h>
 #include <time.h>
@@ -377,8 +378,8 @@ void core_drop(core_t *self)
 
 void set_up_instruction_set()
 {
-    for (u8 indice = 0; indice < MAX_INSTRUCTION_NUMBER - 1; indice++)
-        instruction_set[indice] = undefined_instruction;
+    for (u8 index = 0; index < MAX_INSTRUCTION_NUMBER - 1; index++)
+        instruction_set[index] = undefined_instruction;
     if (MAX_INSTRUCTION_NUMBER != 256)
         warn("Consider changing the %s index type to another type to avoid potential issues.", "u8");
     instruction_set[0] = loadu;
@@ -470,7 +471,11 @@ void read_config(char *config_file_name, char **file_buffer_list, u16 *number_of
     *number_of_file = i;
 }
 
-void excute_program()
+void *execute_program_thread(void *args)
 {
-    return;
+    program_thread_data_t *td = (program_thread_data_t *)args;
+    core_t *core = core_new(file_buffer_list[td->index], td->index);
+    core_execute(core);
+    core_drop(core);
+    return args;
 }

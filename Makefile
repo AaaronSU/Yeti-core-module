@@ -1,8 +1,7 @@
 all: run_par
 
 run_par: mkdir_bin
-	#gcc vm.c -o bin/vm -Wall -Wconversion -Wextra -lm
-	gcc main.c vm.c -o bin/vm -Wall -Wconversion -Wextra -lm
+	gcc vm.c -o bin/vm -Wall -Wconversion -Wextra -g3
 	./bin/vm script.conf
 
 run: mkdir_bin

@@ -384,6 +384,7 @@ static void test_fmau(void **state)
     }
     core_drop(core);
 }
+
 //
 static void test_incu(void **state)
 {

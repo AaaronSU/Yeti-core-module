@@ -51,6 +51,13 @@ typedef uint16_t u16;
 typedef uint8_t u8;
 typedef int64_t i64;
 typedef double f64;
+char *file_buffer_list[MAX_FILE_BUFFER_SIZE];
+
+typedef struct program_thread_data_s
+{
+    pthread_t tid;
+    u16 index;
+} program_thread_data_t;
 
 typedef struct instruction_s
 {
@@ -150,5 +157,7 @@ void set_up_instruction_set();
 void read_config(char *config_file_name, char **file_buffer_list, u16 *number_of_file);
 
 void excute_program();
+
+void *execute_program_thread(void *args);
 
 #endif
