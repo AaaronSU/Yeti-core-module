@@ -8,7 +8,6 @@
 
 #define MAX_SAMPLES 5
 #define ITERATION 50
-#define SIZE_FILE ((sizeof(u32) + sizeof(u64)) * 1000) // Parce qu'il y a pas de vecteur pour l'instant
 
 typedef struct
 {
@@ -113,12 +112,13 @@ void mesure_performance_scalaire(void (*opcode)(core_t *), u64 r, const u8 *titl
 {
     core_t *core = core_init();
 
-    size_t size_file_buffer = (sizeof(u32) + sizeof(u64)) *r;
+    size_t size_file_buffer = (sizeof(u32) + sizeof(u64)) * r; // bon peut-etre un peu bete (marche que scalaire, c'est pour les jump)
+    // mais allocation mémoire assez grande
     u8 *file_buffer = (u8 *)malloc(size_file_buffer);
 
     if (file_buffer == NULL)
     {
-        printf("failed to allocate file buffer of size %lu bytes", SIZE_FILE);
+        printf("failed to allocate file buffer of size %lu bytes", size_file_buffer);
         core_drop(core);
         exit(1);
     }
@@ -170,20 +170,20 @@ void mesure_performance_scalaire(void (*opcode)(core_t *), u64 r, const u8 *titl
     f64 max = samples[r - 1];
     f64 mean = mean_f64(samples, r);
     f64 dev = stddev_f64(samples, r);
+    f64 opns = (f64)(r * ITERATION) / mean;
     // f64 mbps = size_mib / (mean / 1e9);
-    f64 size_b = 0;
-    f64 mbps = 0;
+    //f64 size_b = 0;
+    //f64 mbps = 0;
 
-    printf("%10s; %15.3lf; %10lu; %15.3lf; %15.3lf; %15.3lf; %15.3lf (%6.3lf %%); %10.3lf;\n",
+    printf("%10s; %10lu; %15.3lf; %15.3lf; %15.3lf; %15.3lf (%6.3lf %%); %10.3lf;\n",
            title,
-           size_b,
            r,
            min,
            mean,
            max,
            dev,
            (dev * 100.0 / mean),
-           mbps);
+           opns);
 }
 
 //
@@ -204,10 +204,9 @@ int main()
         };
 
     // print header
-    printf("%10s; %15s; %10s; %15s; %15s; %15s; %26s; %10s;\n",
+    printf("%10s; %10s; %15s; %15s; %15s; %26s; %10s;\n",
            "opcode",
-           "B",
-           "r", "min (ns)", "mean (ns)", "max (ns)", "stddev (%)", "MiB/ns");
+           "r", "min (ns)", "mean (ns)", "max (ns)", "stddev (%)", "opération/ns");
 
     u64 r = 1000;
 

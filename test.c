@@ -83,22 +83,19 @@ static void test_loadu(void **state)
         u8 r1 = rand() % 10; // entre 0 et 9
         u8 r2 = 10 + (rand() % 10); // entre 10 et 19
         u8 r3 = 20 + (rand() % 12); // entre 20 et 31
-        // fuite de donnée quand même registre, problème à gerer mais je ne sais pas pourquoi 
 
         core->U[r2] = (rand() % (MAX_MEMORY_SIZE / 3));
         core->U[r3] = (rand() % (MAX_MEMORY_SIZE / 3));
-        u8 offset = rand() ;
+        u8 offset = rand();
 
         u32 *ptr = (u32 *)(core->file_buffer + core->IP);
         *ptr = create_instruction(0, offset, r1, r2, r3);
 
         u64 value = rand();
         u64 indice = core->U[r2] + core->U[r3] + offset;
-        printf("indice : %lu\n", indice);
         *(u64 *)(core->memory + indice) = value;
 
         loadu(core);
-
         core->IP = 0;
 
         assert_int_equal(core->U[r1], value);
@@ -107,7 +104,7 @@ static void test_loadu(void **state)
     core_drop(core);
 }
 
-// instruction_set[13] = movu;
+//
 static void test_storeu(void **state)
 {
     size_t size_file = sizeof(u32);
@@ -289,6 +286,105 @@ static void test_addu(void **state)
 }
 
 //
+static void test_mulu(void **state)
+{
+    size_t size_file = sizeof(u32);
+
+    core_t *core = core_init();
+    u8 *file_buffer = (u8 *)malloc(size_file);
+
+    if (file_buffer == NULL)
+    {
+        printf("failed to allocate file buffer of size %lu bytes", size_file);
+        core_drop(core);
+        exit(1);
+    }
+    core->file_buffer = file_buffer;
+
+    for (int i = 0; i < MAX_INTERATION; ++i)
+    {
+        u8 r1 = random() % 32;
+        u8 r2 = random() % 32;
+        u8 r3 = random() % 32;
+
+        u64 v2 = random();
+        u64 v3 = random();
+
+        core->U[r2] = v2;
+        core->U[r3] = v3;
+
+        u32 *ptr = (u32 *)(core->file_buffer + core->IP);
+        *ptr = create_instruction(0, 0, r1, r2, r3);
+
+        mulu(core);
+        core->IP = 0;
+
+        if (r2 == r3)
+        {
+            assert_int_equal(core->U[r1], v3 * v3);
+        }
+        else
+        {
+            assert_int_equal(core->U[r1], (v2 * v3));
+        }
+
+        // CF[0] = 1 si opération = 0
+        if (core->U[r1] == 0)
+        {
+            assert_true(core->CF[0]);
+        }
+    }
+    core_drop(core);
+}
+
+// 
+static void test_fmau(void **state)
+{
+
+    size_t size_file = sizeof(u32);
+
+    core_t *core = core_init();
+    u8 *file_buffer = (u8 *)malloc(size_file);
+
+    if (file_buffer == NULL)
+    {
+        printf("failed to allocate file buffer of size %lu bytes", size_file);
+        core_drop(core);
+        exit(1);
+    }
+    core->file_buffer = file_buffer;
+
+    for (int i = 0; i < MAX_INTERATION; ++i)
+    {
+        u8 r1 = random() % 10;
+        u8 r2 = 10 + random() % 10;
+        u8 r3 = 20 + random() % 12;
+
+        u64 v1 = random();
+        u64 v2 = random();
+        u64 v3 = random();
+
+        core->U[r1] = v1;
+        core->U[r2] = v2;
+        core->U[r3] = v3;
+
+        u32 *ptr = (u32 *)(core->file_buffer + core->IP);
+        *ptr = create_instruction(0, 0, r1, r2, r3);
+
+        fmau(core);
+        core->IP = 0;
+
+        assert_int_equal(core->U[r1], v1 + v2 * v3);
+
+        // CF[0] = 1 si opération = 0
+        if (core->U[r1] == 0)
+        {
+            assert_true(core->CF[0]);
+        }
+    }
+    core_drop(core);
+}
+//
 static void test_incu(void **state)
 {
     size_t size_file = sizeof(u32);
@@ -421,7 +517,7 @@ static void test_jl(void **state)
         core->CF[3] = true;
 
         // TODO : vérifier que ça dépasse vraiment pas la taille du buffer
-        u8 size = ((rand() * SIZE_INSTRUCTION_IN_BYTE) % size_file);
+        u8 size = (rand() % size_file);
 
         u64 *ptr_addr = (u64 *)(core->file_buffer + core->IP + sizeof(u32));
 
@@ -454,6 +550,7 @@ static void test_outu(void **state)
     core_drop(core); */
 }
 
+
 //
 int main(void)
 {
@@ -464,6 +561,8 @@ int main(void)
         cmocka_unit_test(test_movu),
         cmocka_unit_test(test_movui),
         cmocka_unit_test(test_addu),
+        cmocka_unit_test(test_mulu),
+        cmocka_unit_test(test_fmau),
         cmocka_unit_test(test_incu),
         cmocka_unit_test(test_cmpu),
         cmocka_unit_test(test_jl),
