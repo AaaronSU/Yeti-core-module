@@ -472,12 +472,6 @@ void read_config(char *config_file_name, char **file_buffer_list, u16 *number_of
     *number_of_file = i;
 }
 
-typedef struct program_thread_data_s
-{
-    pthread_t tid;
-    u16 index;
-} program_thread_data_t;
-
 void *execute_program_thread(void *args)
 {
     program_thread_data_t *td = (program_thread_data_t *)args;
@@ -486,31 +480,4 @@ void *execute_program_thread(void *args)
     core_execute(core);
     core_drop(core);
     return args;
-}
-
-int main(int argc, char *argv[])
-{
-    if (argc != 2)
-    {
-        fprintf(stderr, "Error: Incorrect number of arguments\n");
-        fprintf(stderr, "Usage: %s <config>\n", argv[0]);
-        return 1;
-    }
-    u16 n;
-    read_config(argv[1], file_buffer_list, &n);
-    program_thread_data_t *tds = malloc(sizeof(program_thread_data_t) * n);
-    set_up_instruction_set();
-
-    for (u16 i = 0; i < n; i++)
-    {
-        tds[i].index = i;
-        pthread_create(&tds[i].tid, NULL, execute_program_thread, &tds[i]);
-    }
-
-    for (u16 i = 0; i < n; i++)
-    {
-        pthread_join(tds[i].tid, NULL);
-    }
-
-    return 0;
 }

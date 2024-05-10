@@ -59,6 +59,8 @@ typedef struct program_thread_data_s
 {
     pthread_t tid;
     u16 index;
+    u32 core_id;
+    u32 numa_id;
 } program_thread_data_t;
 
 typedef struct instruction_s
