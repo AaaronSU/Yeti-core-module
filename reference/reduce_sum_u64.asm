@@ -3,20 +3,16 @@ data:
 
 code:	
 	movui u0, 0 	 	# Array index
-	movui u1, 100		# Number of array elements boundary
+	movui u1, 1000		# Number of array elements boundary
 	movui u2, 8	 	 	# sizeof(u64)
 	mulu  u1, u1, u2 	# Array size in bytes (loop boundary)
 	movui u24, 0	 	# Accumulator
 
 	movui u3, @a
-
 	movui u25, 1	 	# Initializer for a
-	movui u31, 2        # Multiplicateur des valeurs dans l'inialisation
 
 # Initialize arrays
 _init_loop:
-
-	mulu u25, u25, u31
 	storeu (u3, u0), u25 	# memory(u3 + u0) = u25 
 
 	addu u0, u0, u2			# u0 += u2 
