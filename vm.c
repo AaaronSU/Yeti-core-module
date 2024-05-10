@@ -14,6 +14,8 @@
 
 #include "vm.h"
 
+char *file_buffer_list[MAX_FILE_BUFFER_SIZE];
+
 instruction_t instruction_new(u32 instruction)
 {
     instruction = htobe32(instruction);

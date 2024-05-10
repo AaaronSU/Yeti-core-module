@@ -1,12 +1,12 @@
 all: run_par
 
 run_par: mkdir_bin
-	gcc vm.c -o bin/vm -Wall -Wconversion -Wextra -g3
+	gcc vm.c main.c -o bin/vm -Wall -Wconversion -Wextra -g3
 	./bin/vm script.conf
 
 run: mkdir_bin
-	#gcc vm.c -o bin/vm -Wall -Wconversion -Wextra
-	gcc main.c vm.c -o bin/vm -Wall -Wconversion -Wextra -lm
+	#gcc vm.c main.c -o bin/vm -Wall -Wconversion -Wextra
+	gcc main.c vm.c -o bin/vm -Wall -Wconversion -Wextra
 	./bin/vm script.conf
 	# ./bin/vm reference/hello_world.archyb
 	# ./bin/vm reference/fibonacci.archyb

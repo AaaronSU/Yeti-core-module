@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <pthread.h>
 
 #define PERF 0
 
@@ -51,7 +52,8 @@ typedef uint16_t u16;
 typedef uint8_t u8;
 typedef int64_t i64;
 typedef double f64;
-char *file_buffer_list[MAX_FILE_BUFFER_SIZE];
+
+extern char *file_buffer_list[MAX_FILE_BUFFER_SIZE];
 
 typedef struct program_thread_data_s
 {
