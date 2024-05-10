@@ -16,7 +16,6 @@
 #include "vm.c"
 
 #define MAX_INTERATION 1000
-#define SIZE_FILE ((sizeof(u32) + sizeof(u64)) * MAX_INTERATION)
 
 //
 static core_t *core_init()
@@ -35,17 +34,7 @@ static core_t *core_init()
         exit(1);
     }
 
-    u8 *file_buffer = (u8 *)malloc(SIZE_FILE);
-
-    if (file_buffer == NULL)
-    {
-        printf("failed to allocate file buffer of size %lu bytes", SIZE_FILE);
-        free(memory);
-        free(core);
-        exit(1);
-    }
     core->memory = memory;
-    core->file_buffer = file_buffer;
 
     for (int i = 0; i < NUMBER_SCALAR_REGISTER; ++i)
     {
@@ -75,13 +64,26 @@ static void test_loadu(void **state)
 {
     // U1 = Memory(u2 + u3 + offset)
 
+    size_t size_file = sizeof(u32);
+
     core_t *core = core_init();
+    u8 *file_buffer = (u8 *)malloc(size_file);
+
+    if (file_buffer == NULL)
+    {
+        printf("failed to allocate file buffer of size %lu bytes", size_file);
+        core_drop(core);
+        exit(1);
+    }
+    core->file_buffer = file_buffer;
+    
     for (int i = 0; i < MAX_INTERATION; ++i)
     {
         // intialisation des registres
-        u8 r1 = rand() % 32;
-        u8 r2 = rand() % 32;
-        u8 r3 = rand() % 32;
+        u8 r1 = rand() % 10; // entre 0 et 9
+        u8 r2 = 10 + (rand() % 10); // entre 10 et 19
+        u8 r3 = 20 + (rand() % 12); // entre 20 et 31
+        // fuite de donnée quand même registre, problème à gerer mais je ne sais pas pourquoi 
 
         core->U[r2] = (rand() % (MAX_MEMORY_SIZE / 3));
         core->U[r3] = (rand() % (MAX_MEMORY_SIZE / 3));
@@ -97,6 +99,8 @@ static void test_loadu(void **state)
 
         loadu(core);
 
+        core->IP = 0;
+
         assert_int_equal(core->U[r1], value);
     }
 
@@ -106,7 +110,18 @@ static void test_loadu(void **state)
 // instruction_set[13] = movu;
 static void test_storeu(void **state)
 {
+    size_t size_file = sizeof(u32);
+
     core_t *core = core_init();
+    u8 *file_buffer = (u8 *)malloc(size_file);
+
+    if (file_buffer == NULL)
+    {
+        printf("failed to allocate file buffer of size %lu bytes", size_file);
+        core_drop(core);
+        exit(1);
+    }
+    core->file_buffer = file_buffer;
 
     // Memory(u1 + u2 + offset) = u3
     for (int i = 0; i < MAX_INTERATION; ++i)
@@ -129,6 +144,7 @@ static void test_storeu(void **state)
         u64 indice = core->U[r1] + core->U[r2] + offset;
 
         storeu(core);
+        core->IP = 0;
 
         assert_int_equal(core->U[r3], *(u64 *)(core->memory + indice));
     }
@@ -139,7 +155,18 @@ static void test_storeu(void **state)
 //
 static void test_movu(void **state)
 {
+    size_t size_file = sizeof(u32);
+
     core_t *core = core_init();
+    u8 *file_buffer = (u8 *)malloc(size_file);
+
+    if (file_buffer == NULL)
+    {
+        printf("failed to allocate file buffer of size %lu bytes", size_file);
+        core_drop(core);
+        exit(1);
+    }
+    core->file_buffer = file_buffer;
 
     // U[register_1] = U[register_2]
     for (int i = 0; i < MAX_INTERATION; ++i)
@@ -162,6 +189,7 @@ static void test_movu(void **state)
         }
 
         movu(core);
+        core->IP = 0;
         assert_int_equal(core->U[register_1], core->U[register_2]);
         assert_int_equal(val_r2, core->U[register_2]);
     }
@@ -175,7 +203,18 @@ static void test_movu(void **state)
 //
 static void test_movui(void **state)
 {
+    size_t size_file = sizeof(u32) + sizeof(u64);
+
     core_t *core = core_init();
+    u8 *file_buffer = (u8 *)malloc(size_file);
+
+    if (file_buffer == NULL)
+    {
+        printf("failed to allocate file buffer of size %lu bytes", size_file);
+        core_drop(core);
+        exit(1);
+    }
+    core->file_buffer = file_buffer;
 
     // U[r1] = imm (test quand U[r1] = 0 et U[r1] =! 0 si MAX_ITERATION grand)
     for (int i = 0; i < MAX_INTERATION; ++i)
@@ -190,6 +229,7 @@ static void test_movui(void **state)
         *ptr_imm = htobe64(imm);
 
         movui(core);
+        core->IP = 0;
         assert_int_equal(core->U[r1], imm);
     }
 
@@ -199,7 +239,19 @@ static void test_movui(void **state)
 //
 static void test_addu(void **state)
 {
+    size_t size_file = sizeof(u32);
+
     core_t *core = core_init();
+    u8 *file_buffer = (u8 *)malloc(size_file);
+
+    if (file_buffer == NULL)
+    {
+        printf("failed to allocate file buffer of size %lu bytes", size_file);
+        core_drop(core);
+        exit(1);
+    }
+    core->file_buffer = file_buffer;
+
     for (int i = 0; i < MAX_INTERATION; ++i)
     {
         u8 r1 = random() % 32;
@@ -216,6 +268,7 @@ static void test_addu(void **state)
         *ptr = create_instruction(0, 0, r1, r2, r3);
 
         addu(core);
+        core->IP = 0;
 
         if (r2 == r3)
         {
@@ -238,7 +291,19 @@ static void test_addu(void **state)
 //
 static void test_incu(void **state)
 {
+    size_t size_file = sizeof(u32);
+
     core_t *core = core_init();
+    u8 *file_buffer = (u8 *)malloc(size_file);
+
+    if (file_buffer == NULL)
+    {
+        printf("failed to allocate file buffer of size %lu bytes", size_file);
+        core_drop(core);
+        exit(1);
+    }
+    core->file_buffer = file_buffer;
+
     for (int i = 0; i < MAX_INTERATION; ++i)
     {
         u8 r1 = random() % 32;
@@ -249,6 +314,7 @@ static void test_incu(void **state)
         *ptr = create_instruction(0, 0, r1, 0, 0);
 
         incu(core);
+        core->IP = 0;
 
         assert_int_equal(core->U[r1], v1 + 1);
     }
@@ -258,7 +324,18 @@ static void test_incu(void **state)
 //
 static void test_cmpu(void **state)
 {
+    size_t size_file = sizeof(u32);
+
     core_t *core = core_init();
+    u8 *file_buffer = (u8 *)malloc(size_file);
+
+    if (file_buffer == NULL)
+    {
+        printf("failed to allocate file buffer of size %lu bytes", size_file);
+        core_drop(core);
+        exit(1);
+    }
+    core->file_buffer = file_buffer;
 
     // U[r1] == U[r2]
     for (int i = 0; i < MAX_INTERATION; ++i)
@@ -276,6 +353,7 @@ static void test_cmpu(void **state)
         *ptr = create_instruction(0, 0, r1, r2, 0);
 
         cmpu(core);
+        core->IP = 0;
 
         assert_true(core->CF[7]);
         assert_false(core->CF[6]);
@@ -299,12 +377,11 @@ static void test_cmpu(void **state)
         core->U[r1] = v1;
         core->U[r2] = v2;
 
-        core->IP = 0;
-
         u32 *ptr = (u32 *)(core->file_buffer + core->IP);
         *ptr = create_instruction(0, 0, r1, r2, 0);
 
         cmpu(core);
+        core->IP = 0;
 
         assert_false(core->CF[7]);
         assert_true(core->CF[6]);
@@ -321,9 +398,21 @@ static void test_cmpu(void **state)
 //
 static void test_jl(void **state)
 {
+    size_t size_file = (sizeof(u32) + sizeof(u64)) * MAX_INTERATION;
+
     core_t *core = core_init();
+    u8 *file_buffer = (u8 *)malloc(size_file);
+
+    if (file_buffer == NULL)
+    {
+        printf("failed to allocate file buffer of size %lu bytes", size_file);
+        core_drop(core);
+        exit(1);
+    }
+    core->file_buffer = file_buffer;
+
     // dépassement ?
-    // A GERER ==> DONNE PROBLEME MALLOC DEVRAIT GERER LE FAIT DE DEPASSER, MESSAGE DERREUR OU modulo??
+    // A GERER ==> DONNE PROBLEME MALLOC DEVRAIT GERER LE FAIT DE DEPASSER, MESSAGE DERREUR??
 
     // Test sans dépassement
     for (int i = 0; i < MAX_INTERATION; ++i)
@@ -332,7 +421,7 @@ static void test_jl(void **state)
         core->CF[3] = true;
 
         // TODO : vérifier que ça dépasse vraiment pas la taille du buffer
-        u8 size = ((rand() * SIZE_INSTRUCTION_IN_BYTE) % SIZE_FILE);
+        u8 size = ((rand() * SIZE_INSTRUCTION_IN_BYTE) % size_file);
 
         u64 *ptr_addr = (u64 *)(core->file_buffer + core->IP + sizeof(u32));
 

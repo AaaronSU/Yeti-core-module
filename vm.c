@@ -78,7 +78,7 @@ void loadu(core_t *core)
     DEBUG_PRINT("Le registre %d a pour valeur %ld\n"
                 "Le registre %d a pour valeur %ld\n"
                 "Le registre %d a pour valeur %ld\n"
-                "core->memory[**address**] a pour valeur %lx\n",
+                "core->memory[**address**] a pour valeur %ld\n",
                 instruction.register_1, core->U[instruction.register_1],
                 instruction.register_2, core->U[instruction.register_2],
                 instruction.register_3, core->U[instruction.register_3],
@@ -88,7 +88,7 @@ void loadu(core_t *core)
     DEBUG_PRINT("Le registre %d a pour valeur %ld\n"
                 "Le registre %d a pour valeur %ld\n"
                 "Le registre %d a pour valeur %ld\n"
-                "core->memory[**address**] a pour valeur %lx\n\n",
+                "core->memory[**address**] a pour valeur %ld\n\n",
                 instruction.register_1, core->U[instruction.register_1],
                 instruction.register_2, core->U[instruction.register_2],
                 instruction.register_3, core->U[instruction.register_3],
