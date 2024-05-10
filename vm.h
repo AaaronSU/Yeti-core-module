@@ -134,7 +134,11 @@ void movui(core_t *core);
 
 void addu(core_t *core);
 
+void subu(core_t *core);
+
 void mulu(core_t *core);
+
+void divu(core_t *core);
 
 void fmau(core_t *core);
 
